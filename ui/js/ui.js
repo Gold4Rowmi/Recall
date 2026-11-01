@@ -4,6 +4,7 @@ import { paintDogs, SFX } from './brand.js';
 const MAP = { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' };
 export const esc = s => String(s ?? '').replace(/[&<>"']/g, c => MAP[c]);
 
+export const icon = (name, size = 16) => `<svg class="px" width="${size}" height="${size}" aria-hidden="true"><use href="vendor/icons-sprite.svg#i-${name}"/></svg>`;
 export const launchbar = () => '<div class="launchbar" aria-label="Loading">' + Array.from({ length:10 }, (_, i) => `<i style="--i:${i}"></i>`).join('') + '</div>';
 // Typing keeps its keys; every other control takes the console keys.
 export const isTextEntry = t => !!t && (t.isContentEditable || t.tagName === 'TEXTAREA' || (t.tagName === 'INPUT' && !/^(checkbox|radio|color|range|button)$/.test(t.type)));

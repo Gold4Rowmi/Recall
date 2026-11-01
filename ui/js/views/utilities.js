@@ -4,7 +4,7 @@ import * as P from '../planner.js';
 import * as sync from '../sync.js';
 import { toast, setMuted, paintDogs } from '../brand.js';
 import * as ui from '../ui.js';
-import { esc, sheet, confirmSheet, fill, stateBlock } from '../ui.js';
+import { esc, icon, sheet, confirmSheet, fill, stateBlock } from '../ui.js';
 import { today, mondayOf, addDays } from '../time.js';
 
 const COLORS = ['#5F6B7A', '#4E9F6C', '#B77AD9', '#D98B5F', '#C85F72', '#5B9AA0', '#997A5B']; // person colours are user data, not UI tokens
@@ -38,7 +38,7 @@ export function mountFollowUps(el){
 export function renderFollowUps(el){
   const list = el.querySelector('.fu-list'), rows = P.reminders().filter(r => showDone || !r.completed_at);
   const html = rows.length ? rows.map(r => `<div class="qrow furow${r.completed_at ? ' isdone' : ''}" data-id="${esc(r.id)}">
-      <button class="tick big" type="button" data-fu="done" aria-pressed="${!!r.completed_at}" aria-label="Mark done">${r.completed_at ? '✓' : ''}</button>
+      <button class="tick big" type="button" data-fu="done" aria-pressed="${!!r.completed_at}" aria-label="Mark done">${r.completed_at ? icon('check') : ''}</button>
       <span class="qtext">${esc(r.title)}</span>
       <select aria-label="Assigned to">${personOptions(r.assigned_person_id)}</select>
       <button class="btn" type="button" data-fu="queue">Queue</button><button class="btn danger-text" type="button" data-fu="del" data-sfx="back">Delete</button></div>`).join('')

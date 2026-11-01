@@ -45,14 +45,14 @@
 .blk .tt{font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 .blk .tm{color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 .blk.short .tm{display:none}
-.tick{flex:none; width:16px; height:16px; padding:0; margin-top:1px; border:1px solid var(--soft); border-radius:3px; background:var(--raised); color:var(--ink); font:inherit; font-size:12px; line-height:14px; cursor:pointer}
+.tick{flex:none; display:grid; place-items:center; width:18px; height:18px; padding:0; border:1px solid var(--soft); border-radius:3px; background:var(--raised); color:var(--ink); font:inherit; font-size:12px; line-height:14px; cursor:pointer}
 .tick:hover{border-color:var(--ink)}
 /* 44 px target, 20 px visible box */
-.tick.big{position:relative; isolation:isolate; width:44px; height:44px; line-height:44px; margin:0; border:0; background:none}
+.tick.big{position:relative; isolation:isolate; width:44px; height:44px; margin:0; border:0; background:none}
 .tick.big::before{content:""; position:absolute; z-index:-1; left:12px; top:12px; width:20px; height:20px; box-sizing:border-box; border:1px solid var(--soft); border-radius:4px; background:var(--raised)}
 .tick.big:hover::before{border-color:var(--ink)}
 /* Floats over the title and shows on hover or focus, so the title keeps the width; opacity keeps it reachable by keyboard */
-.blk .more{position:absolute; top:2px; right:2px; height:16px; padding:0 2px; border:0; border-radius:2px; background:var(--sunken); color:var(--muted); font:inherit; font-size:12px; line-height:16px; cursor:pointer; opacity:0}
+.blk .more{position:absolute; top:2px; right:2px; height:16px; padding:0; border:0; border-radius:2px; background:var(--sunken); color:var(--muted); font:inherit; font-size:12px; line-height:16px; cursor:pointer; opacity:0}
 .blk:hover .more,.blk:focus-within .more{opacity:1}
 .blk.isdone .more{background:var(--raised)}
 .blk .more:hover{color:var(--ink)}

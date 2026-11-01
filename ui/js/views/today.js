@@ -3,7 +3,7 @@ import * as store from '../store.js';
 import * as P from '../planner.js';
 import { DAY_START, DAY_END, SLOT, fmtClock, priorityLabel, isDone } from '../planner.js';
 import { toast, react, SFX } from '../brand.js';
-import { esc, sheet, menu, confirmSheet, loadingBlock, stateBlock, fill } from '../ui.js';
+import { esc, icon, sheet, menu, confirmSheet, loadingBlock, stateBlock, fill } from '../ui.js';
 import { today, addDays, fmtDate, fmtDuration, mondayOf, nowMinute } from '../time.js';
 import { openExternal, getStatus, onStatus, syncNow } from '../sync.js';
 import { isIgnored } from '../analytics.js';
@@ -32,9 +32,9 @@ function mount(el){
   root = el;
   el.innerHTML = `<div class="tday">
     <div class="tbar">
-      <button class="btn icon" type="button" data-act="prev" aria-label="Previous" title="Previous">‹</button>
+      <button class="btn icon" type="button" data-act="prev" aria-label="Previous" title="Previous">${icon('chevron-left')}</button>
       <button class="btn" type="button" data-act="today">Today</button>
-      <button class="btn icon" type="button" data-act="next" aria-label="Next" title="Next">›</button>
+      <button class="btn icon" type="button" data-act="next" aria-label="Next" title="Next">${icon('chevron-right')}</button>
       <h1 class="pixel" id="tdate"></h1><span class="spacer"></span>
       <div class="seg" role="group" aria-label="Calendar view">${['day', 'week', 'month'].map(m => `<button type="button" data-mode="${m}">${m[0].toUpperCase() + m.slice(1)}</button>`).join('')}</div>
       <button class="btn" type="button" data-act="plan">Plan work</button>
@@ -148,7 +148,7 @@ function renderGrid(){
       el.dataset.sig = sig; el.classList.toggle('isdone', done); el.classList.toggle('short', t.duration_minutes <= SLOT);
       el.style.cssText = `top:${yOf(t.start_minute)}px;height:${t.duration_minutes * PX - 2}px;left:calc(${lane * 100 / of}% + 2px);width:calc(${100 / of}% - 4px);--c:${c}`;
       el.title = `${t.title}, ${fmtClock(t.start_minute)}, ${fmtDuration(t.duration_minutes)}`;
-      el.innerHTML = `<button class="tick" type="button" data-act="done" aria-label="Mark ${esc(t.title)} ${done ? 'not done' : 'done'}">${done ? '✓' : ''}</button><span class="tx"><span class="tt">${esc(t.title)}</span><span class="tm">${fmtClock(t.start_minute)}${p ? ' · ' + p : ''}</span></span><button class="more" type="button" data-act="more" aria-label="More for ${esc(t.title)}">•••</button><i class="rz"></i>`;
+      el.innerHTML = `<button class="tick" type="button" data-act="done" aria-label="Mark ${esc(t.title)} ${done ? 'not done' : 'done'}">${done ? icon('check') : ''}</button><span class="tx"><span class="tt">${esc(t.title)}</span><span class="tm">${fmtClock(t.start_minute)}${p ? ' · ' + p : ''}</span></span><button class="more" type="button" data-act="more" aria-label="More for ${esc(t.title)}">${icon('more')}</button><i class="rz"></i>`;
     }
   }
   for (const [id, el] of blocks) if (!seen.has(id)){ el.remove(); blocks.delete(id); }
@@ -169,7 +169,7 @@ function renderMonth(){
 function queueRow(t){
   const who = person(t.assigned_person_id)?.display_name, p = priorityLabel(t.priority_hint);
   return `<div class="qrow" data-qid="${esc(t.id)}"><span class="qdrag" aria-hidden="true"></span><span class="qtext"><span class="clip">${esc(t.title)}</span><span class="small muted clip">${[fmtDuration(t.duration_minutes), who, p].filter(Boolean).map(esc).join(' · ')}</span></span>
-    <span class="qacts"><button class="btn" type="button" data-act="qplan" title="Schedule in the next free slot">Schedule</button><button class="btn icon" type="button" data-act="qdel" data-sfx="back" aria-label="Delete" title="Remove from Queue. Undo is available.">×</button><button class="btn icon" type="button" data-act="qmore" aria-label="More">•••</button></span></div>`;
+    <span class="qacts"><button class="btn" type="button" data-act="qplan" title="Schedule in the next free slot">Schedule</button><button class="btn icon" type="button" data-act="qdel" data-sfx="back" aria-label="Delete" title="Remove from Queue. Undo is available.">${icon('trash')}</button><button class="btn icon" type="button" data-act="qmore" aria-label="More">${icon('more')}</button></span></div>`;
 }
 function renderQueue(){
   if (!ready()) return write(queueEl, `<div class="qhead"><h2>Unscheduled work</h2></div><p class="muted small qempty">${DASH}</p>`);
@@ -192,7 +192,7 @@ let drawerFrom = null; // where focus goes back to when the drawer closes
 function setDrawer(tab){
   if (tab && !S.drawer) drawerFrom = document.activeElement;
   S.drawer = tab; drawer.classList.toggle('open', !!tab); drawer._html = null;
-  if (tab){ drawer.innerHTML = `<div class="dhead"><div class="seg">${[['queue', 'Queue'], ['followups', 'Follow-ups'], ['details', 'Details']].map(([k, l]) => `<button type="button" data-tab="${k}" aria-pressed="${k === tab}">${l}</button>`).join('')}</div><span class="spacer"></span><button class="btn icon" type="button" data-act="close" data-sfx="back" aria-label="Close">×</button></div><div class="dbody"></div>`;
+  if (tab){ drawer.innerHTML = `<div class="dhead"><div class="seg">${[['queue', 'Queue'], ['followups', 'Follow-ups'], ['details', 'Details']].map(([k, l]) => `<button type="button" data-tab="${k}" aria-pressed="${k === tab}">${l}</button>`).join('')}</div><span class="spacer"></span><button class="btn icon" type="button" data-act="close" data-sfx="back" aria-label="Close">${icon('close')}</button></div><div class="dbody"></div>`;
     if (tab === 'queue'){ $(drawer, '.dbody').innerHTML = `<form class="capture" id="qadd"><input aria-label="New queue item" placeholder="Capture something" required><button class="btn" type="submit">Add</button></form><div class="dlist"></div>`;
       $(drawer, '#qadd').onsubmit = e => { e.preventDefault(); const i = e.target.querySelector('input'); P.createBlock({ title:i.value.trim(), duration:30 }); i.value = ''; }; }
     if (tab === 'followups') mountFollowUps($(drawer, '.dbody'));
@@ -403,7 +403,7 @@ function openSession(task){
       const shown = (term ? rows.filter(r => `${r.name} ${r.status} ${(r.assignee_names || []).join(' ')} ${(r.tags || []).join(' ')}`.toLowerCase().includes(term)) : [...suggested, ...rows.filter(r => !sug.has(r.clickup_task_id))]).slice(0, 200);
       const btn = q('[data-suggest]'); btn.hidden = !suggested.length; btn.textContent = `Link ${suggested.length} suggested`;
       q('[data-avail]').innerHTML = shown.map(r => `<div class="qrow" data-cid="${esc(r.clickup_task_id)}"><span class="qtext"><span class="clip">${esc(r.name)}</span><span class="small muted clip">${sug.has(r.clickup_task_id) ? 'Suggested · ' : ''}${[cap(r.status), (r.assignee_names || []).join(', ')].filter(Boolean).map(esc).join(' · ')}</span></span><button class="btn" type="button" data-add>Link</button></div>`).join('') || '<p class="muted">No open ClickUp work matches.</p>';
-      q('[data-linked]').innerHTML = list().map(l => { const r = store.get('clickup_tasks', l.clickup_task_id) || { name:l.clickup_task_id }; return `<div class="qrow${l.completed_in_session_at ? ' isdone' : ''}" data-cid="${esc(l.clickup_task_id)}"><button class="tick big" type="button" data-result aria-pressed="${!!l.completed_in_session_at}" aria-label="Done in session">${l.completed_in_session_at ? '✓' : ''}</button><span class="qtext"><span class="clip">${esc(r.name)}</span><span class="small muted clip">${esc(cap(r.status))}</span></span>${r.url ? '<button class="btn" type="button" data-open>Open</button>' : ''}<button class="btn" type="button" data-remove data-sfx="back">Unlink</button></div>`; }).join('') || '<p class="muted">Attach everything you plan to batch in this block. Linked estimates are effort, not extra calendar time.</p>';
+      q('[data-linked]').innerHTML = list().map(l => { const r = store.get('clickup_tasks', l.clickup_task_id) || { name:l.clickup_task_id }; return `<div class="qrow${l.completed_in_session_at ? ' isdone' : ''}" data-cid="${esc(l.clickup_task_id)}"><button class="tick big" type="button" data-result aria-pressed="${!!l.completed_in_session_at}" aria-label="Done in session">${l.completed_in_session_at ? icon('check') : ''}</button><span class="qtext"><span class="clip">${esc(r.name)}</span><span class="small muted clip">${esc(cap(r.status))}</span></span>${r.url ? '<button class="btn" type="button" data-open>Open</button>' : ''}<button class="btn" type="button" data-remove data-sfx="back">Unlink</button></div>`; }).join('') || '<p class="muted">Attach everything you plan to batch in this block. Linked estimates are effort, not extra calendar time.</p>';
     }
     q('[data-search]').oninput = paint;
     q('[data-type]').onchange = e => { cur = store.put('work_sessions', { ...cur, session_type:e.target.value }); };

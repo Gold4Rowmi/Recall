@@ -1,9 +1,10 @@
-# The ui folder is the whole web app. Every push that touches it goes live on GitHub Pages.
+# The ui folder is the whole web app. It goes live after each release passes, stamped with that version.
 name: Pages
 on:
-  push:
+  workflow_run:
+    workflows: [Release]
+    types: [completed]
     branches: [main]
-    paths: ['ui/**', '.github/workflows/pages.yml']
   workflow_dispatch:
 
 permissions:
@@ -17,12 +18,19 @@ concurrency:
 
 jobs:
   deploy:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+      - name: Stamp version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          v=$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName -q .tagName)
+          sed -i "s|<span id=\"version\">[^<]*|<span id=\"version\">${v#v}|" ui/index.html
       - uses: actions/upload-pages-artifact@v3
         with:
           path: ui

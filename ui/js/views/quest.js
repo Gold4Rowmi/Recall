@@ -3,7 +3,7 @@
 import * as store from '../store.js';
 import * as sync from '../sync.js';
 import { toast, react, SFX } from '../brand.js';
-import { esc, fill, stateBlock, loadingBlock } from '../ui.js';
+import { esc, icon, fill, stateBlock, loadingBlock } from '../ui.js';
 import { today, fmtDate, addDays } from '../time.js';
 import * as rules from '../game-rules.js';
 import { createScene, fitCanvas } from '../game-scene.js';
@@ -65,7 +65,7 @@ const meter = (label, value, of, cls = '') => `<div class="q-meter ${cls}" role=
 
 function shield(tier, roman){ // pixel crest; a pip fills for each rank
   const pips = Array.from({ length:6 }, (_, i) => `<i class="${i <= tier ? 'on' : ''}"></i>`).join('');
-  return `<div class="q-crest" aria-hidden="true"><div class="q-pips">${pips}</div><svg class="px" width="48" height="56" viewBox="0 0 12 14"><path fill="var(--ink)" d="M1 0h10v1h1v7h-1v2h-1v1H9v1H8v1H7v1H5v-1H4v-1H3v-1H2v-1H1V8H0V1h1z"/><path fill="var(--shell)" d="M2 1h8v1h1v6h-1v2H9v1H8v1H7v1H5v-1H4v-1H3v-1H2V8H1V2h1z"/></svg><span class="pixel">${roman}</span></div>`;
+  return `<div class="q-crest" aria-hidden="true"><div class="q-pips">${pips}</div>${icon('shield', 32)}<span class="pixel">${roman}</span></div>`;
 }
 
 function repaint(){ view.dirty(); rails.forEach(r => r.render()); }
@@ -111,7 +111,7 @@ const view = {
     const st = rules.streak(s.scores, d);
     el.querySelector('#qRank').innerHTML = `<div class="row q-rank">${shield(rank.tier, rank.roman)}<div class="clip"><b>${esc(rank.name)}</b><div class="small muted">Level ${lv}, ${xp} XP</div><div class="small muted">${rank.next ? 'Next rank at level ' + rank.next : 'Top rank reached'}</div></div></div>${meter('Experience this level', into, rules.XP_PER_LEVEL)}<div class="small muted q-under"><span>${into} of ${rules.XP_PER_LEVEL} XP</span><span>Streak ${st} ${st === 1 ? 'day' : 'days'}</span></div>`;
     const lists = tasksByDay(), tasksOn = x => lists.get(x) || [], stats = rules.dayStats(tasksOn(d)), ready = new Set(rules.achievementsFor(stats, rules.planningReadiness(d, mode(), tasksOn)).map(g => g.code));
-    el.querySelector('#qGoals').innerHTML = `<p class="small muted q-note">${stats.total ? `${stats.done} of ${stats.total} blocks done. Scores bank at midnight.` : 'No blocks scheduled yet.'}</p><p class="small muted q-note">${esc(rules.quoteFor(d))}</p><ul class="q-goals">${rules.GOALS.map(g => `<li class="${ready.has(g.code) ? 'on' : ''}" title="${esc(g.desc)}"><i aria-hidden="true"></i><span class="clip">${esc(g.title)}</span><span class="small muted">+${g.xp}</span></li>`).join('')}</ul>`;
+    el.querySelector('#qGoals').innerHTML = `<p class="small muted q-note">${stats.total ? `${stats.done} of ${stats.total} blocks done. Scores bank at midnight.` : 'No blocks scheduled yet.'}</p><p class="small muted q-note">${esc(rules.quoteFor(d))}</p><ul class="q-goals">${rules.GOALS.map(g => `<li class="${ready.has(g.code) ? 'on' : ''}" title="${esc(g.desc)}"><i aria-hidden="true">${ready.has(g.code) ? icon('check') : ''}</i><span class="clip">${esc(g.title)}</span><span class="small muted">+${g.xp}</span></li>`).join('')}</ul>`;
     const recent = [...s.scores].sort((a, b) => a.score_date < b.score_date ? 1 : -1).slice(0, 7);
     el.querySelector('#qDaysList').innerHTML = recent.length ? `<ul class="q-days">${recent.map(r => `<li title="${esc(r.summary || '')}"><span class="small">${esc(fmtDate(r.score_date))}</span><span class="spacer"></span><b>${r.score}</b><span class="small muted">+${r.xp_awarded} XP</span></li>`).join('')}</ul>` : '<p class="small muted">Scored days appear here.</p>';
     el.querySelector('#qStyle').value = style(); el.querySelector('#qDays').value = mode();

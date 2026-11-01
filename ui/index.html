@@ -2,8 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#6AA8F5">
 <title>RECALL</title>
+<link rel="icon" type="image/png" href="icons/icon-48.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
 <link rel="stylesheet" href="css/base.css">
 <link rel="stylesheet" href="css/views.css">
 <script src="vendor/supabase.js"></script>
@@ -21,10 +25,10 @@
   </nav>
   <button class="keybtn" id="tabR" type="button" aria-label="Next tab" title="Next tab (R)" hidden><span class="key">R</span></button>
   <span class="spacer"></span>
-  <button class="syncpill" id="sync" type="button" hidden title="Sync now"><i></i><span id="syncText">Synced</span></button>
+  <button class="syncpill" id="sync" type="button" hidden title="Sync now"><svg class="px" width="16" height="16" aria-hidden="true"><use id="syncIcon" href="vendor/icons-sprite.svg#i-sync"/></svg><span id="syncText">Synced</span></button>
   <button class="btn primary" id="newBlock" type="button" aria-label="New block" title="New block" hidden><span class="glyph">A</span><span class="lbl">New block</span></button>
-  <button class="btn icon" id="moreBtn" type="button" aria-label="More" title="More" hidden>•••</button>
-  <button class="btn icon" id="aboutBtn" type="button" aria-label="About" title="About"><svg class="px" width="16" height="16" viewBox="0 0 8 8" aria-hidden="true"><path fill="currentColor" d="M3 0h2v2H3zM2 3h3v4H2zM2 7h4v1H2z"/></svg></button>
+  <button class="btn icon" id="moreBtn" type="button" aria-label="More" title="More" hidden><svg class="px" width="16" height="16" aria-hidden="true"><use href="vendor/icons-sprite.svg#i-more"/></svg></button>
+  <button class="btn icon" id="aboutBtn" type="button" aria-label="About" title="About"><svg class="px" width="16" height="16" aria-hidden="true"><use href="vendor/icons-sprite.svg#i-info"/></svg></button>
 </div></header>
 
 <main id="views" hidden></main>

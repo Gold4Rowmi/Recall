@@ -55,6 +55,7 @@ window.addEventListener('recall:go', e => go(e.detail));
 
 function syncPill(s){
   const el = $('sync'), n = store.pendingCount();
+  $('syncIcon').setAttribute('href', `vendor/icons-sprite.svg#i-${s.state === 'offline' ? 'offline' : s.state === 'error' ? 'warning' : 'sync'}`);
   el.classList.toggle('busy', s.state === 'syncing'); el.classList.toggle('bad', s.state === 'error'); el.classList.toggle('off', s.state === 'offline');
   $('syncText').textContent = s.state === 'syncing' ? 'Syncing' : s.state === 'offline' ? (n ? `Offline, ${n} waiting` : 'Offline')
     : s.state === 'error' ? 'Sync failed' : 'Synced';

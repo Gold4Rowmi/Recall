@@ -11,7 +11,7 @@
   --tan:#D9893B; --blue:#2F6FE0; --sel-soft:#E3ECFC; --danger:#C0352F; --success:#1F7A44; --warning:#8A5A00; --drop:#000000;
   --success-soft:#DDF1E4; --warning-soft:#FBEBC8; --danger-soft:#FBE1DF; --border-strong:#5B6270;
   --head-ink:#16181D; --head-on:#F4F5F7; --head-hover:rgba(255,255,255,.3);
-  --chart:var(--soft); --info:var(--muted); --on-danger:#FFFFFF; --scrim:rgba(22,24,29,.5);
+  --chev:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Cpath fill='%2316181D' d='M0 2h1v1h1v1h1v1h2V4h1V3h1V2h1v2H7v1H6v1H5v1H3V6H2V5H1V4H0z'/%3E%3C/svg%3E"); --chart:var(--soft); --info:var(--muted); --on-danger:#FFFFFF; --scrim:rgba(22,24,29,.5);
   --f-pixel:'Silkscreen', ui-monospace, monospace;  /* 8, 16, 24, 32, 64 px only */
   --f-ui:'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; /* 400, 600 */
   --spring:cubic-bezier(.34,1.56,.64,1);
@@ -19,11 +19,11 @@
 }
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
   --paper:#121418; --raised:#1A1D22; --sunken:#0E1013; --grid:#1B1E24; --frame:#2E333B;
-  --ink:#F4F5F7; --soft:#C3C8D0; --muted:#9EA5B0; --on-ink:#16181D; --faint:#5B6270;
+  --chev:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Cpath fill='%23F4F5F7' d='M0 2h1v1h1v1h1v1h2V4h1V3h1V2h1v2H7v1H6v1H5v1H3V6H2V5H1V4H0z'/%3E%3C/svg%3E"); --ink:#F4F5F7; --soft:#C3C8D0; --muted:#9EA5B0; --on-ink:#16181D; --faint:#5B6270;
   --shell-deep:var(--shell); --tan:#E8A96B; --blue:#7AA7F2; --sel-soft:#1D2A40; --danger:#F08A84; --success:#6CC28F; --warning:#E9B65A; --success-soft:#17301F; --warning-soft:#33290F; --danger-soft:#3A1C1B; --border-strong:#8A919C; --on-danger:#16181D; color-scheme:dark; }}
 :root[data-theme="dark"]{
   --paper:#121418; --raised:#1A1D22; --sunken:#0E1013; --grid:#1B1E24; --frame:#2E333B;
-  --ink:#F4F5F7; --soft:#C3C8D0; --muted:#9EA5B0; --on-ink:#16181D; --faint:#5B6270;
+  --chev:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Cpath fill='%23F4F5F7' d='M0 2h1v1h1v1h1v1h2V4h1V3h1V2h1v2H7v1H6v1H5v1H3V6H2V5H1V4H0z'/%3E%3C/svg%3E"); --ink:#F4F5F7; --soft:#C3C8D0; --muted:#9EA5B0; --on-ink:#16181D; --faint:#5B6270;
   --shell-deep:var(--shell); --tan:#E8A96B; --blue:#7AA7F2; --sel-soft:#1D2A40; --danger:#F08A84; --success:#6CC28F; --warning:#E9B65A; --success-soft:#17301F; --warning-soft:#33290F; --danger-soft:#3A1C1B; --border-strong:#8A919C; --on-danger:#16181D; color-scheme:dark; }
 
 *{box-sizing:border-box}
@@ -44,7 +44,7 @@ svg.px{display:block; shape-rendering:crispEdges}
 ::-webkit-scrollbar{width:12px;height:12px} ::-webkit-scrollbar-thumb{background:var(--frame);border:3px solid transparent;background-clip:content-box;border-radius:6px}
 
 /* Header: the app is the hero, Rommel the signature */
-.head{flex:none; z-index:20; background:var(--shell); color:var(--head-ink); border-bottom:2px solid var(--head-ink)}
+.head{flex:none; z-index:20; padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) 0 env(safe-area-inset-left,0px); background:var(--shell); color:var(--head-ink); border-bottom:2px solid var(--head-ink)}
 .head .in{min-height:64px; display:flex; align-items:center; gap:12px; padding:0 16px}
 .head .in > *{flex:none}
 .head .in > .spacer{flex:1}
@@ -68,13 +68,13 @@ svg.px{display:block; shape-rendering:crispEdges}
 .key{width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; border-radius:4px; background:var(--head-ink); color:var(--head-on); font-family:var(--f-pixel); font-size:16px; -webkit-font-smoothing:none; transition:transform .16s var(--spring)}
 .keybtn:active .key{transform:translateY(2px) scale(.97,.94); transition-duration:.08s}
 .syncpill{min-height:44px; padding:0 10px; border:0; background:transparent; color:var(--head-ink); font:inherit; font-size:12px; cursor:pointer; display:flex; align-items:center; gap:8px}
-.syncpill i{width:8px; height:8px; background:var(--head-ink)} .syncpill.busy i{animation:blink .6s steps(2,end) infinite} .syncpill.bad i{background:none; box-shadow:inset 0 0 0 2px var(--head-ink)}
+.syncpill svg{flex:none} .syncpill.busy svg{animation:turn .8s steps(4,end) infinite}
 .syncpill:hover{text-decoration:underline}
 /* The minimum window is 900 wide: labels go first, then the tabs take their own row. */
 @media (max-width:1040px){ .syncpill:not(.bad):not(.off) #syncText,.head .lbl{display:none} .head .btn.primary{padding:0 9px} .head .in{gap:8px} .head .appname{margin-right:0} }
 .head .in > .syncpill{flex:0 1 auto; min-width:0} #syncText{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 @media (min-width:601px) and (max-width:760px){ .head .in{flex-wrap:wrap; row-gap:0; padding-bottom:8px} .keybtn,.tabs{order:5} }
-@keyframes blink{50%{opacity:0}}
+@keyframes turn{to{transform:rotate(360deg)}}
 /* Every press moves. Buttons with a drop have their own rule. */
 .tab,.subtab,.seg button,.menu button,.tick,.q-rail,.mday,.mchip,.mmore{transition:transform .16s var(--spring)}
 .tab:active,.subtab:active,.seg button:active,.menu button:active,.tick:active,.q-rail:active,.mday:active,.mchip:active,.mmore:active{transform:translateY(1px) scale(.97); transition-duration:.08s}
@@ -101,6 +101,7 @@ svg.px{display:block; shape-rendering:crispEdges}
 .btn.primary .glyph{background:var(--shell); color:var(--head-ink)}
 
 input,select,textarea{font:inherit; color:var(--ink); background:var(--sunken); border:1px solid var(--frame); border-radius:4px; min-height:44px; padding:8px 10px; width:100%}
+select{appearance:none; padding-right:32px; background-image:var(--chev); background-repeat:no-repeat; background-position:right 8px center; background-size:16px}
 textarea{resize:vertical; min-height:88px}
 label.field{display:grid; gap:4px; font-size:12px; color:var(--muted)}
 label.field :is(input,select,textarea){font-size:14px}
@@ -167,10 +168,11 @@ dialog .sheet-actions{position:sticky; bottom:-20px; z-index:1; margin:16px -20p
   .head .in{min-height:56px; padding:0 8px 0 16px}
   .head .appname{font-size:24px}
   .keybtn{display:none}
-  .tabs{position:fixed; left:0; right:0; bottom:0; z-index:25; grid-auto-columns:1fr; background:var(--shell); border:0; border-top:2px solid var(--head-ink); border-radius:0}
-  #views{margin-bottom:54px}
+  .tabs{position:fixed; left:0; right:0; bottom:0; z-index:25; grid-auto-columns:1fr; padding-bottom:calc(4px + env(safe-area-inset-bottom,0px)); background:var(--shell); border:0; border-top:2px solid var(--head-ink); border-radius:0}
+  .ind{height:44px}
+  #views{margin-bottom:calc(54px + env(safe-area-inset-bottom,0px))}
   .view{padding:12px 12px 76px}
-  .head #newBlock{position:fixed; right:12px; bottom:72px; z-index:25; padding:0 14px 0 10px}
+  .head #newBlock{position:fixed; right:12px; bottom:calc(72px + env(safe-area-inset-bottom,0px)); z-index:25; padding:0 14px 0 10px}
   .head #newBlock .lbl{display:inline}
-  .toast{bottom:148px; transform:translate(-50%,260px)} /* clears New block and the tabs, and still rests off screen */
+  .toast{bottom:calc(148px + env(safe-area-inset-bottom,0px)); transform:translate(-50%,260px)} /* clears New block and the tabs, and still rests off screen */
 }
