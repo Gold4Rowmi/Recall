@@ -4,11 +4,11 @@
 
 /* ===== ROWMI tokens. RECALL's shell is a light blue, chosen over the Cursor Blue rule; black text on it is 7.2 : 1. ===== */
 :root{
-  accent-color:var(--blue);
+  accent-color:var(--ink);
   --shell:#6AA8F5; --shell-deep:#1F5FBF;
   --paper:#ECEEF1; --raised:#FFFFFF; --sunken:#F4F5F7; --grid:#DDE1E6; --frame:#C9CED6;
   --ink:#16181D; --soft:#3A3F48; --muted:#5B6270; --on-ink:#F4F5F7; --faint:#9EA5B0;
-  --tan:#D9893B; --blue:#2F6FE0; --sel-soft:#E3ECFC; --danger:#C0352F; --success:#1F7A44; --warning:#8A5A00; --drop:#000000;
+  --tan:#D9893B; --blue:#2F6FE0; --sel-soft:#E3ECFC; --danger:#C0352F; --success:#1F7A44; --warning:#8A5A00;
   --success-soft:#DDF1E4; --warning-soft:#FBEBC8; --danger-soft:#FBE1DF; --border-strong:#5B6270;
   --head-ink:#16181D; --head-on:#F4F5F7; --head-hover:rgba(255,255,255,.3);
   --chev:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Cpath fill='%2316181D' d='M0 2h1v1h1v1h1v1h2V4h1V3h1V2h1v2H7v1H6v1H5v1H3V6H2V5H1V4H0z'/%3E%3C/svg%3E"); --chart:var(--soft); --info:var(--muted); --on-danger:#FFFFFF; --scrim:rgba(22,24,29,.5);
@@ -33,7 +33,7 @@ body{color:var(--ink); font-family:var(--f-ui); font-size:14px; line-height:1.5;
 [hidden]{display:none!important}
 h1,h2,h3,p{margin:0}
 b,strong{font-weight:600}
-.pixel{font-family:var(--f-pixel); font-weight:400; -webkit-font-smoothing:none}
+.pixel{font-family:var(--f-pixel); font-weight:400; -webkit-font-smoothing:none; font-smooth:never}
 .muted{color:var(--muted)} .small{font-size:12px}
 .spacer{flex:1}
 .row{display:flex; align-items:center; gap:8px; min-width:0}
@@ -50,7 +50,6 @@ svg.px{display:block; shape-rendering:crispEdges}
 .head .in > .spacer{flex:1}
 .head .appname{font-size:32px; line-height:1; margin-right:12px}
 .head .btn{background:transparent; color:var(--head-ink); border-color:var(--head-ink); box-shadow:0 2px 0 var(--head-ink)}
-.head .btn.primary{background:var(--head-ink); color:var(--head-on); border-color:var(--head-ink)}
 .head .btn:not(.primary):hover{background:var(--head-hover)}
 .head :focus-visible{outline-color:var(--head-ink)} /* Cursor Blue would vanish on the blue shell */
 /* Page slide tabs, from the UI guidelines: a block springs between equal tabs. On the shell they stay black in both themes. */
@@ -67,11 +66,11 @@ svg.px{display:block; shape-rendering:crispEdges}
 .keybtn:hover{background:var(--head-hover)}
 .key{width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; border-radius:4px; background:var(--head-ink); color:var(--head-on); font-family:var(--f-pixel); font-size:16px; -webkit-font-smoothing:none; transition:transform .16s var(--spring)}
 .keybtn:active .key{transform:translateY(2px) scale(.97,.94); transition-duration:.08s}
-.syncpill{min-height:44px; padding:0 10px; border:0; background:transparent; color:var(--head-ink); font:inherit; font-size:12px; cursor:pointer; display:flex; align-items:center; gap:8px}
+.syncpill{min-height:44px; padding:0 8px; border:0; background:transparent; color:var(--head-ink); font:inherit; font-size:12px; cursor:pointer; display:flex; align-items:center; gap:8px}
 .syncpill svg{flex:none} .syncpill.busy svg{animation:turn .8s steps(4,end) infinite}
 .syncpill:hover{text-decoration:underline}
-/* The minimum window is 900 wide: labels go first, then the tabs take their own row. */
-@media (max-width:1040px){ .syncpill:not(.bad):not(.off) #syncText,.head .lbl{display:none} .head .btn.primary{padding:0 9px} .head .in{gap:8px} .head .appname{margin-right:0} }
+/* The minimum window is 800 wide: the sync label goes first, then the tabs take their own row. */
+@media (max-width:1040px){ .syncpill:not(.bad):not(.off) #syncText{display:none} .head .in{gap:8px} .head .appname{margin-right:0} }
 .head .in > .syncpill{flex:0 1 auto; min-width:0} #syncText{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 @media (min-width:601px) and (max-width:760px){ .head .in{flex-wrap:wrap; row-gap:0; padding-bottom:8px} .keybtn,.tabs{order:5} }
 @keyframes turn{to{transform:rotate(360deg)}}
@@ -101,23 +100,43 @@ svg.px{display:block; shape-rendering:crispEdges}
 .card{background:var(--raised); border:1px solid var(--frame); box-shadow:0 2px 0 var(--frame); border-radius:6px; padding:16px; min-width:0}
 .card h2{margin:0 0 8px; font-family:var(--f-pixel); font-weight:400; font-size:16px; -webkit-font-smoothing:none}
 
-.btn{display:inline-flex; align-items:center; gap:10px; min-height:44px; padding:0 14px; border-radius:6px; border:1px solid var(--frame); background:var(--raised); color:var(--ink); box-shadow:0 2px 0 var(--frame); font:inherit; font-size:15px; cursor:pointer; white-space:nowrap; transition:transform .16s var(--spring), box-shadow .1s}
-.btn:hover{border-color:var(--ink)}
-.btn:active{transform:translateY(2px) scale(.97); box-shadow:none; transition-duration:.08s}
-.btn.primary{background:var(--ink); color:var(--on-ink); border-color:var(--ink); box-shadow:0 2px 0 var(--drop); padding-left:10px}
-.btn.primary:hover{border-color:var(--soft)}
-.btn.danger{background:var(--danger); color:var(--on-danger); border-color:var(--danger)}
-.danger-text{color:var(--danger)}
+.btn{display:inline-flex; align-items:center; gap:10px; min-height:44px; padding:0 16px 0 10px; border-radius:6px; border:1px solid var(--frame); background:var(--raised); color:var(--ink); box-shadow:0 2px 0 var(--frame); font:inherit; cursor:pointer; white-space:nowrap; transition:transform .16s var(--spring), box-shadow .1s, background-color .1s ease-out}
+.btn:hover{background:var(--sunken)}
+.btn:active{transform:translateY(2px) scale(.97,.94); box-shadow:none; transition-duration:.08s}
+.btn.primary{background:var(--ink); color:var(--on-ink); border-color:var(--ink); box-shadow:0 2px 0 var(--border-strong)}
+.btn.ghost{background:transparent; border-color:transparent; box-shadow:none; padding:0 12px}
+.btn.ghost:hover{background:var(--sunken)}
+.btn.danger{background:var(--danger); color:var(--on-danger); border-color:var(--danger); box-shadow:0 2px 0 var(--border-strong)}
+.btn.primary:hover,.btn.danger:hover{filter:brightness(1.25)}
+.danger-text,.btn.danger-text{color:var(--danger)}
 .btn.icon{width:44px; padding:0; justify-content:center}
-.btn:disabled{opacity:.5; cursor:default}
+.btn[disabled]{opacity:1; background:var(--sunken); color:var(--muted); border-color:var(--frame); box-shadow:none; cursor:not-allowed; filter:none; transform:none}
 .glyph{width:24px; height:24px; border-radius:12px; display:inline-flex; align-items:center; justify-content:center; font-family:var(--f-pixel); font-size:16px; -webkit-font-smoothing:none; background:var(--ink); color:var(--on-ink)}
 .btn.primary .glyph{background:var(--shell); color:var(--head-ink)}
+.btn.danger .glyph{background:var(--on-danger); color:var(--danger)}
+.btn[disabled] .glyph{background:var(--frame); color:var(--muted)}
 
-input,select,textarea{font:inherit; color:var(--ink); background:var(--sunken); border:1px solid var(--frame); border-radius:4px; min-height:44px; padding:8px 10px; width:100%}
+input,select,textarea{font:inherit; color:var(--ink); background:var(--raised); border:1px solid var(--frame); border-radius:6px; min-height:44px; padding:0 12px; width:100%}
 select{appearance:none; padding-right:32px; background-image:var(--chev); background-repeat:no-repeat; background-position:right 8px center; background-size:16px}
-textarea{resize:vertical; min-height:88px}
-label.field{display:grid; gap:4px; font-size:12px; color:var(--muted)}
-label.field :is(input,select,textarea){font-size:14px}
+textarea{resize:vertical; min-height:88px; padding:8px 12px}
+:is(input,select,textarea):focus-visible{outline:2px solid var(--blue); outline-offset:0; border-color:var(--blue)}
+label.field{display:flex; flex-direction:column; gap:6px; min-width:0; font-size:13px; font-weight:600}
+label.field :is(input,select,textarea){font-size:14px; font-weight:400}
+.help{flex-basis:100%; font-size:12px; font-weight:400; color:var(--muted)}
+.field.err :is(input,select,textarea){border-color:var(--danger)}
+.field.err .help{color:var(--danger)}
+/* Switches apply as soon as they're pressed */
+.toggle{display:inline-flex; align-items:center; gap:12px; min-height:44px; padding:0; background:none; border:0; color:var(--ink); font:inherit; cursor:pointer}
+.toggle .track{width:44px; height:24px; padding:2px; border-radius:4px; background:var(--frame); display:flex; flex:none; transition:background-color .1s ease-out}
+.toggle .knob{width:20px; height:20px; border-radius:2px; background:var(--raised); transition:transform .18s cubic-bezier(.34,1.8,.64,1), background-color .1s steps(1,end)}
+.toggle[aria-checked="true"] .track{background:var(--ink)}
+.toggle[aria-checked="true"] .knob{transform:translateX(20px); background:var(--tan)}
+.status{display:flex; align-items:flex-start; gap:10px; padding:12px 14px; border-radius:4px; font-size:13px; min-width:0}
+.status .sq{width:10px; height:10px; margin-top:5px; flex-shrink:0}
+.status.warn{background:var(--warning-soft)} .status.warn .sq{background:var(--warning)}
+.status.bad{background:var(--danger-soft)} .status.bad .sq{background:var(--danger)}
+.status .btn{margin-left:auto}
+.status:has(.btn){align-items:center} .status:has(.btn) .sq{margin-top:0}
 ::placeholder{color:var(--muted); opacity:1}
 /* These clip their children, so the ring sits inside. */
 .seg button:focus-visible,.blk :focus-visible,.mday:focus-visible,.mchip:focus-visible,.mmore:focus-visible{outline-offset:-3px}
@@ -125,18 +144,25 @@ label.field :is(input,select,textarea){font-size:14px}
 
 .state{display:flex; flex-direction:column; align-items:center; text-align:center; gap:10px; padding:32px 16px; color:var(--muted)}
 .state b{font-family:var(--f-pixel); font-weight:400; font-size:16px; color:var(--ink); -webkit-font-smoothing:none}
+.state.loading{animation:wait .4s}
+.late{display:flex; align-items:center; gap:12px; animation:wait 10s}
+@keyframes wait{from,to{visibility:hidden}}
 .launchbar{display:grid; grid-template-columns:repeat(10,12px); gap:4px}
 .launchbar i{display:block; height:10px; background:var(--grid); animation:lb 1s steps(1,end) infinite; animation-delay:calc(var(--i) * .1s)}
 @keyframes lb{0%,50%{background:var(--shell)}51%,100%{background:var(--grid)}}
 
-.toast{position:fixed; inset:auto auto 20px 50%; margin:0; border:0; transform:translate(-50%,120px); background:var(--ink); color:var(--on-ink); padding:10px 14px; border-radius:6px; transition:transform .24s var(--spring); max-width:calc(100% - 32px); display:flex; gap:12px; align-items:center}
+.toast{position:fixed; inset:auto auto 72px 50%; margin:0; border:0; transform:translate(-50%,160px); background:var(--ink); color:var(--on-ink); padding:10px 14px; border-radius:6px; transition:transform .24s var(--spring); max-width:calc(100% - 32px); display:flex; gap:12px; align-items:center}
 .toast:empty{visibility:hidden} .toast.show{transform:translate(-50%,0)}
 .toast button{font:inherit; color:inherit; background:none; border:0; text-decoration:underline; min-height:44px; min-width:44px; cursor:pointer}
 
-dialog{border:1px solid var(--frame); border-radius:6px; background:var(--raised); color:var(--ink); padding:20px; max-width:min(560px,calc(100% - 32px)); width:100%; max-height:calc(100% - 32px); box-shadow:0 2px 0 var(--frame)}
+dialog{border:1px solid var(--frame); border-radius:6px; background:var(--raised); color:var(--ink); padding:20px; max-width:min(420px,calc(100% - 32px)); width:100%; max-height:calc(100% - 32px); box-shadow:0 2px 0 var(--frame)}
+dialog.work{max-width:min(560px,calc(100% - 32px))}
 dialog.wide{max-width:min(960px,calc(100% - 32px))}
+#about{padding:24px}
+#about .sheet-actions{position:static; margin:16px 0 0; padding:0; border:0}
 dialog::backdrop{background:var(--scrim)}
-dialog h2{font-family:var(--f-pixel); font-weight:400; font-size:16px; margin-bottom:12px; -webkit-font-smoothing:none}
+dialog h2{font-size:16px; font-weight:600; margin-bottom:12px}
+dialog p{color:var(--muted)}
 dialog h2:focus{outline:none}
 .sheet-actions{display:flex; gap:8px; justify-content:flex-end; margin-top:16px; flex-wrap:wrap}
 /* Long sheets scroll; the way out stays in reach. */
@@ -144,6 +170,9 @@ dialog .sheet-actions{position:sticky; bottom:-20px; z-index:1; margin:16px -20p
 .menu{position:fixed; z-index:30; background:var(--raised); border:1px solid var(--frame); box-shadow:0 2px 0 var(--frame); border-radius:6px; padding:4px; min-width:200px; color:var(--ink)}
 .menu button{display:block; width:100%; text-align:left; min-height:44px; padding:0 12px; font:inherit; color:inherit; background:none; border:0; border-radius:4px; cursor:pointer}
 .menu button:hover,.menu button:focus-visible{background:var(--sunken)}
+
+/* Action bar, like a handheld: Settings on the left, item actions on the right, A last and filled */
+.actionbar{flex:none; display:flex; align-items:center; gap:8px; padding:6px 16px 8px; background:var(--raised); border-top:1px solid var(--frame)}
 
 .login{flex:1; display:flex; align-items:center; justify-content:center; padding:16px}
 .login .card{width:min(400px,100%); display:grid; gap:12px}
@@ -185,7 +214,7 @@ dialog .sheet-actions{position:sticky; bottom:-20px; z-index:1; margin:16px -20p
   .ind{height:44px}
   #views{margin-bottom:calc(54px + env(safe-area-inset-bottom,0px))}
   .view{padding:12px 12px 76px}
-  .head #newBlock{position:fixed; right:12px; bottom:calc(72px + env(safe-area-inset-bottom,0px)); z-index:25; padding:0 14px 0 10px}
-  .head #newBlock .lbl{display:inline}
+  .actionbar{display:contents} .actionbar>:not(#newBlock){display:none} /* no second bar above the tabs */
+  #newBlock{position:fixed; right:12px; bottom:calc(72px + env(safe-area-inset-bottom,0px)); z-index:25}
   .toast{bottom:calc(148px + env(safe-area-inset-bottom,0px)); transform:translate(-50%,260px)} /* clears New block and the tabs, and still rests off screen */
 }

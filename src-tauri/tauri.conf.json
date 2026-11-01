@@ -12,8 +12,8 @@
         "title": "RECALL",
         "width": 1360,
         "height": 860,
-        "minWidth": 900,
-        "minHeight": 600,
+        "minWidth": 800,
+        "minHeight": 560,
         "center": true,
         "backgroundColor": "#ECEEF1"
       }

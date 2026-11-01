@@ -24,8 +24,7 @@
 .q-goals i{width:16px; height:16px; border:1px solid var(--frame); background:var(--sunken)}
 .q-goals li.on i{border:0; background:none; color:var(--success)}
 .q-days li{display:flex; align-items:center; gap:8px; min-height:24px}
-.q-cap{display:block; width:36px; height:26px; line-height:22px; text-align:center; font-size:16px; color:var(--ink); border:2px solid var(--ink); box-shadow:0 2px 0 var(--ink); border-radius:4px}
-.q-rail{display:grid; gap:6px; width:100%; min-height:44px; padding:6px 0; border:0; background:none; color:inherit; font:inherit; text-align:left; cursor:pointer}
+.q-rail{display:grid; gap:8px; width:100%; min-height:44px; padding:8px 0; border:0; background:none; color:inherit; font:inherit; text-align:left; cursor:pointer}
 .q-rail:hover{background:var(--sunken)}
 .q-rail-top{display:flex; align-items:baseline; gap:8px; min-width:0}
 .q-rail-top .pixel{font-size:16px}

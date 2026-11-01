@@ -54,6 +54,7 @@ export default {
       sharedClick(b);
       if (b.dataset.sub) this.show(b.dataset.sub);
       else if (b.dataset.queue) this.queue(+b.dataset.queue);
+      else if ('clear' in b.dataset){ const f = el.querySelector('[data-filter]'); f.value = ''; this.renderTeam(); f.focus(); }
       else if ('today' in b.dataset) window.dispatchEvent(new CustomEvent('recall:go', { detail:'today' }));
     });
     el.querySelector('[data-filter]').addEventListener('input', () => this.renderTeam());
@@ -86,7 +87,7 @@ export default {
     fill(this.el.querySelector('[data-team]'), rows.map(h => {
       const signals = [h.overload.length && 'Overload', h.gaps.length && 'Planning gap', h.undated && `${h.undated} undated`].filter(Boolean);
       return workRow({ tone:h.overload.length ? 'bad' : h.gaps.length ? 'warn' : 'good', title:(h.child ? '– ' : '') + showName(h.name), meta:`This week ${h1(h.minutes[0])} · ${h.pct[0]}% · Next ${h1(h.minutes[1])}`, detail:signals.join(' · ') || 'Healthy' });
-    }).join('') || (query ? stateBlock('sleepy', 'No match', 'Try another name.') : noClickUp('No team set up yet')));
+    }).join('') || (query ? stateBlock('sleepy', 'No match', 'Try another name.', '<button class="btn primary" type="button" data-clear><span class="glyph">A</span>Clear the filter</button>') : noClickUp('No team set up yet')));
   },
   render(){
     const el = this.el, snap = insights.snapshot(), q = s => el.querySelector(s);
@@ -104,7 +105,7 @@ export default {
     const riskProjects = snap.projects.filter(p => ['RED', 'AMBER'].includes(p.signal) && p.window !== 'ON HOLD');
     fill(q('[data-metrics]'), metricStrip(METRICS, { decisions:snap.needs.length, risk:snap.brief.risk.length || riskProjects.length, gaps:snap.planning_gaps, capacity:snap.brief.people.length }));
     fill(q('[data-needs]'), snap.needs.slice(0, 7).map(n => workRow({ tone:'warn', title:n.title, meta:[n.status || 'Needs attention', dueText(n.due)].filter(Boolean).join(' · '), detail:n.why, action:n.row?.url ? openRow(n.row.url) : '' })).join('')
-      || (snap.has_clickup ? stateBlock('sleepy', 'Nothing needs you', 'No decision is waiting on you.') : noClickUp('No ClickUp work yet')));
+      || (snap.has_clickup ? stateBlock('sleepy', 'Nothing needs you', 'No decision is waiting on you.', '<button class="btn primary" type="button" data-today><span class="glyph">A</span>Go to Today</button>') : noClickUp('No ClickUp work yet')));
     fill(q('[data-moves]'), snap.suggestions.slice(0, 7).map((m, i) => workRow({ tone:'info', title:m.title, meta:m.owner, detail:m.action || m.why, action:`<button class="btn" type="button" data-queue="${i}">Queue</button>` })).join('') || `<p class="pad muted">${snap.has_clickup ? 'No move is recommended right now.' : 'Moves appear once ClickUp work is in.'}</p>`);
     fill(q('[data-projects]'), snap.projects.map(p => workRow({ tone:TONE[p.signal], title:p.name, meta:`${WORD[p.signal]} · ${p.target ? dueText(p.target) : 'No target'} · ${p.coverage_text}`, detail:p.gap_text === 'covered' ? 'Covered' : cap(p.gap_text) + (p.recommendation ? ' · ' + p.recommendation : ''), action:p.row?.url ? openRow(p.row.url) : '' })).join('') || noClickUp('No projects yet'));
     this.renderTeam();

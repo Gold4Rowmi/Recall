@@ -4,7 +4,7 @@ import * as P from '../planner.js';
 import * as sync from '../sync.js';
 import { toast, setMuted, paintDogs } from '../brand.js';
 import * as ui from '../ui.js';
-import { esc, icon, sheet, confirmSheet, fill, stateBlock } from '../ui.js';
+import { esc, icon, sheet, confirmSheet, fill, stateBlock, backBtn, toggle, isOn } from '../ui.js';
 import { today, mondayOf, addDays } from '../time.js';
 
 const COLORS = ['#5F6B7A', '#4E9F6C', '#B77AD9', '#D98B5F', '#C85F72', '#5B9AA0', '#997A5B']; // person colours are user data, not UI tokens
@@ -25,10 +25,11 @@ export function openFollowUps(){
 let showDone = false;
 export function mountFollowUps(el){
   el.innerHTML = `<form class="capture"><input aria-label="New follow-up" placeholder="Add a follow-up" required><button class="btn" type="submit">Add</button></form>
-    <label class="check"><input type="checkbox" data-done>Show done</label><div class="fu-list"></div>`;
+    ${toggle('Show done', showDone, 'data-done')}<div class="fu-list"></div>`;
   el.querySelector('form').onsubmit = e => { e.preventDefault(); const i = e.target.querySelector('input'); P.addReminder(i.value.trim()); i.value = ''; };
-  el.querySelector('[data-done]').onchange = e => { showDone = e.target.checked; renderFollowUps(el); };
-  el.querySelector('.fu-list').onclick = e => { const b = e.target.closest('[data-fu]'); if (!b) return; const id = b.closest('[data-id]').dataset.id;
+  el.querySelector('[data-done]').onclick = e => { showDone = isOn(e.currentTarget); renderFollowUps(el); };
+  el.querySelector('.fu-list').onclick = e => { const b = e.target.closest('[data-fu]'); if (!b) return; if (b.dataset.fu === 'add') return el.querySelector('input').focus();
+    const id = b.closest('[data-id]').dataset.id;
     if (b.dataset.fu === 'done') P.toggleReminder(id);
     else if (b.dataset.fu === 'queue'){ P.reminderToQueue(id); toast('Moved to Queue.', 'success'); }
     else if (b.dataset.fu === 'del') toast('Follow-up deleted.', null, { label:'Undo', run:P.deleteReminder(id) }); };
@@ -41,8 +42,8 @@ export function renderFollowUps(el){
       <button class="tick big" type="button" data-fu="done" aria-pressed="${!!r.completed_at}" aria-label="Mark done">${r.completed_at ? icon('check') : ''}</button>
       <span class="qtext">${esc(r.title)}</span>
       <select aria-label="Assigned to">${personOptions(r.assigned_person_id)}</select>
-      <button class="btn" type="button" data-fu="queue">Queue</button><button class="btn danger-text" type="button" data-fu="del" data-sfx="back" data-x>Delete</button></div>`).join('')
-    : stateBlock('sleepy', 'No follow-ups', 'Add anything you need to chase up.');
+      <button class="btn" type="button" data-fu="queue">Queue</button><button class="btn ghost danger-text" type="button" data-fu="del" data-sfx="back" data-x><span class="glyph">X</span>Delete</button></div>`).join('')
+    : stateBlock('sleepy', 'No follow-ups', 'Add anything you need to chase up.', '<button class="btn primary" type="button" data-fu="add"><span class="glyph">A</span>Add a follow-up</button>');
   if (list.dataset.html !== html){ list.dataset.html = html; fill(list, html); }
 }
 
@@ -52,7 +53,7 @@ export function exportWeek(){
   const text = P.journal(P.rangeTasks(monday, addDays(monday, 6)), peopleMap, monday);
   sheet('Export week', (b, close) => {
     b.innerHTML = `<textarea rows="16" readonly aria-label="Weekly journal">${esc(text)}</textarea>
-      <div class="sheet-actions"><button class="btn" type="button" data-close>Close</button><button class="btn" type="button" data-copy>Copy</button><button class="btn primary" type="button" data-save><span class="glyph">A</span>Download</button></div>`;
+      <div class="sheet-actions">${backBtn()}<button class="btn" type="button" data-copy>Copy</button><button class="btn primary" type="button" data-save><span class="glyph">A</span>Download</button></div>`;
     b.querySelector('[data-close]').onclick = () => close();
     b.querySelector('[data-copy]').onclick = async () => { try { await navigator.clipboard.writeText(text); toast('Copied.', 'success'); } catch { toast('Couldn’t copy. Select the text and copy it instead.', 'error'); } };
     b.querySelector('[data-save]').onclick = () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type:'text/markdown' })); a.download = `recall-week-${monday}.md`; a.click(); URL.revokeObjectURL(a.href); toast('Download started.', 'success'); };
@@ -61,7 +62,7 @@ export function exportWeek(){
 
 /* ===== Settings ===== */
 function teamRows(){
-  return people().map(p => `<div class="qrow" data-id="${esc(p.id)}"><input type="color" aria-label="Colour" value="${esc(p.color || COLORS[0])}"><input type="text" aria-label="Name" value="${esc(p.display_name)}"><button class="btn danger-text" type="button" data-remove data-sfx="back">Remove</button></div>`).join('');
+  return people().map(p => `<div class="qrow" data-id="${esc(p.id)}"><input type="color" aria-label="Colour" value="${esc(p.color || COLORS[0])}"><input type="text" aria-label="Name" value="${esc(p.display_name)}"><button class="btn ghost danger-text" type="button" data-remove data-sfx="back">Remove</button></div>`).join('');
 }
 export function openSettings(){
   sheet('Settings', (b, close) => {
@@ -69,23 +70,24 @@ export function openSettings(){
     const brk = store.pref('break_reminders_enabled', '1') !== '0', minute = +store.pref('break_reminder_minute', 780), hhmm = `${String(Math.floor(minute / 60)).padStart(2, '0')}:${String(minute % 60).padStart(2, '0')}`;
     b.innerHTML = `<div class="settings">
       <label class="field">Theme<select data-theme-pick><option value="system">Match Windows</option><option value="light">Light</option><option value="dark">Dark</option></select></label>
-      <label class="check"><input type="checkbox" data-sound ${muted ? '' : 'checked'}>Sounds</label>
-      <label class="check"><input type="checkbox" data-motion ${motion ? 'checked' : ''}>Motion</label>
-      <label class="check"><input type="checkbox" data-break ${brk ? 'checked' : ''}>Daily break reminder</label>
-      <label class="field">Break time<input type="time" step="1800" data-break-at value="${hhmm}"></label>
+      ${toggle('Sound', !muted, 'data-sound')}
+      ${toggle('Motion', motion, 'data-motion')}
+      ${toggle('Daily break reminder', brk, 'data-break')}
+      <label class="field">Break time<input type="time" step="1800" data-break-at value="${hhmm}"><span class="help">Shows once a day, up to three hours after this time.</span></label>
       <label class="field">Team capacity hours per week<input type="number" min="0" max="168" data-capacity value="${esc(store.pref('team_capacity_hours', '30'))}"></label>
       <h3 class="pixel sect">ClickUp</h3><div class="row" data-cu><span class="muted">Checking the connection</span></div>
       <h3 class="pixel sect">Team</h3><div data-team>${teamRows()}</div>
       <form class="capture" data-add><input aria-label="New team member" placeholder="Add a team member" required><button class="btn" type="submit">Add</button></form>
       <h3 class="pixel sect">Keyboard</h3><dl class="keys">${(ui.SHORTCUTS || []).map(s => { const [k, d] = Array.isArray(s) ? s : [s.keys ?? s.key, s.label ?? s.action]; return `<dt>${esc(k)}</dt><dd>${esc(d)}</dd>`; }).join('')}</dl>
-      <h3 class="pixel sect">Account</h3><button class="btn" type="button" data-out data-sfx="back">Sign out</button>
-      </div><div class="sheet-actions"><button class="btn" type="button" data-close>Close</button></div>`;
+      <h3 class="pixel sect">Account</h3><button class="btn" type="button" data-about>About RECALL</button><button class="btn" type="button" data-out data-sfx="back">Sign out</button>
+      </div><div class="sheet-actions">${backBtn()}</div>`;
     const $ = s => b.querySelector(s);
     $('[data-theme-pick]').value = theme;
     $('[data-theme-pick]').onchange = e => { set('recall.theme', e.target.value); applyTheme(e.target.value); paintDogs(); };
-    $('[data-sound]').onchange = e => { store.setPref('sound_muted', e.target.checked ? '0' : '1'); setMuted(!e.target.checked); };
-    $('[data-motion]').onchange = e => store.setPref('ui_motion_enabled', e.target.checked ? '1' : '0');
-    $('[data-break]').onchange = e => store.setPref('break_reminders_enabled', e.target.checked ? '1' : '0');
+    $('[data-sound]').onclick = e => { const on = isOn(e.currentTarget); store.setPref('sound_muted', on ? '0' : '1'); setMuted(!on); };
+    $('[data-motion]').onclick = e => store.setPref('ui_motion_enabled', isOn(e.currentTarget) ? '1' : '0');
+    $('[data-break]').onclick = e => store.setPref('break_reminders_enabled', isOn(e.currentTarget) ? '1' : '0');
+    $('[data-about]').onclick = () => { close(); document.getElementById('about').showModal(); };
     $('[data-break-at]').onchange = e => { const [h, m] = e.target.value.split(':').map(Number); if (!isNaN(h)) store.setPref('break_reminder_minute', String(h * 60 + m)); };
     $('[data-capacity]').onchange = e => store.setPref('team_capacity_hours', e.target.value);
     $('[data-close]').onclick = () => close();
@@ -107,5 +109,5 @@ export function openSettings(){
       if (go) go.onclick = () => sync.connectClickUp().catch(() => toast('Couldn’t reach ClickUp. Try again in a moment.', 'error'));
       if (now) now.onclick = async () => { const ok = await sync.syncNow(); toast(ok ? 'ClickUp is up to date.' : 'Couldn’t sync. Try again when you’re online.', ok ? 'success' : 'error'); };
     }).catch(() => { cu.innerHTML = '<span class="muted">Couldn’t check the connection. It needs you online.</span>'; });
-  });
+  }, { work:true });
 }

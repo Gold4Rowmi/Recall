@@ -17,10 +17,10 @@ export const workRow = ({ tone, title, meta, detail, action = '' }) => `<div cla
 export const metricStrip = (list, values) => `<div class="metrics">${list.map(([k, label]) => `<div class="metric"><span class="pixel mval">${esc(values[k])}</span><span class="small muted">${esc(label)}</span></div>`).join('')}</div>`;
 export const dueText = due => due ? fmtDate(due, { day:'2-digit', month:'short' }) : '';
 
-const retry = '<button class="btn" type="button" data-retry>Try again</button>';
+const retry = '<button class="btn" type="button" data-retry><span class="glyph">A</span>Try again</button>';
 // One state for every panel that has no snapshot yet: loading, or an error that can be retried.
 export const panelState = () => insights.lastError() ? stateBlock('sad', 'Couldn’t read the numbers', 'Your plan is safe. Try again.', retry) : loadingBlock('Reading the numbers.');
-export const staleBanner = () => insights.lastError() && insights.snapshot() ? `<div class="stale" role="status"><span>These numbers may be out of date.</span>${retry}</div>` : '';
+export const staleBanner = () => insights.lastError() && insights.snapshot() ? `<div class="status warn" role="status"><span class="sq"></span><span>These numbers may be out of date.</span>${retry}</div>` : '';
 export const noClickUp = title => stateBlock('sleepy', title, 'Connect ClickUp in Settings, then sync.', '<button class="btn primary" type="button" data-settings><span class="glyph">A</span>Open Settings</button>');
 export const sharedClick = b => { if ('retry' in b.dataset) insights.refresh(); else if ('settings' in b.dataset) openSettings(); else if (b.dataset.url) openExternal(b.dataset.url); };
 
@@ -93,7 +93,7 @@ export default {
       const [kind, tone] = KINDS[k], due = dueText(item.due);
       return workRow({ tone, title:item.title, meta:kind + (due ? ' · ' + due : ''), detail:item.why || item.action, action:item.row?.url ? openRow(item.row.url) : '' });
     }));
-    fill(list, rows.join('') || (snap.has_clickup ? stateBlock('sleepy', 'Nothing needs you', 'Start with your own plan.') : noClickUp('No ClickUp work yet')));
+    fill(list, rows.join('') || (snap.has_clickup ? stateBlock('sleepy', 'Nothing needs you', 'Start with your own plan.', '<button class="btn primary" type="button" data-plan><span class="glyph">A</span>Plan my day</button>') : noClickUp('No ClickUp work yet')));
     this.paintDay(snap.plan, snap.yesterday);
   },
 };

@@ -86,9 +86,12 @@ async function push(){
 let retryT = null, retryMs = 2000;
 function retrySoon(){ clearTimeout(retryT); retryT = setTimeout(() => { retryMs = Math.min(retryMs * 2, 60000); push(); }, retryMs); }
 
+let pulled = 0, pulling = 0;
+export const pullPct = () => pulling ? Math.round(100 * pulled / pulling) : 0;
 export async function pull(tables = Object.keys(TABLES).filter(t => t !== 'clickup_tasks')){
   if (ctx.demo) return;
-  await Promise.all(tables.map(pullTable));
+  pulled = 0; pulling = tables.length;
+  await Promise.all(tables.map(t => pullTable(t).finally(() => { pulled++; })));
   status.lastSync = new Date();
 }
 

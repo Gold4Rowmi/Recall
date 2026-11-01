@@ -75,7 +75,7 @@ const view = {
   dirty(){ if (this.el && !this.el.hidden) this.render(); },
   mount(el){
     this.el = el;
-    el.innerHTML = `<div class="wrap quest"><header class="pagehead"><h1 class="pixel">Quest</h1></header><div class="row q-bar"><button class="btn" type="button" data-sfx="back" id="qBack"><span class="q-cap pixel" aria-hidden="true">B</span>Back to Today</button><span class="spacer"></span>
+    el.innerHTML = `<div class="wrap quest"><header class="pagehead"><h1 class="pixel">Quest</h1></header><div class="row q-bar"><button class="btn" type="button" data-sfx="back" id="qBack"><span class="glyph">B</span>Back to Today</button><span class="spacer"></span>
       <label class="q-pick">Style<select id="qStyle">${rules.STYLES.map(s => `<option>${s}</option>`).join('')}</select></label>
       <label class="q-pick">Days<select id="qDays"><option>Weekdays</option><option>Every day</option></select></label></div>
       <div class="q-grid"><section class="card q-stage"><div id="qBossHead"></div><div class="q-screen" id="qScreen"><canvas id="qCanvas" width="96" height="54" role="img"></canvas></div><div id="qFoot"></div><div id="qState"></div></section>
@@ -94,11 +94,10 @@ const view = {
     const xp = rules.totalXp(s.scores, s.achievements, s.bosses) , lv = rules.levelFromXp(xp), rank = rules.rankForLevel(lv), into = xp % rules.XP_PER_LEVEL;
     const blocked = phase !== 'ready' || !s.scores.length, screen = el.querySelector('#qScreen'), stateEl = el.querySelector('#qState');
     screen.hidden = blocked; el.querySelector('#qBossHead').hidden = blocked; el.querySelector('#qFoot').hidden = blocked;
-    if (phase === 'ready' && !s.scores.length) el.dataset.rest = 'sleepy'; else delete el.dataset.rest; // the header dog carries the state; the panel stays words
     if (phase === 'error' && !this.saidError){ react('sad', 900); SFX.error(); }
     this.saidError = phase === 'error';
     if (phase === 'loading') fill(stateEl, loadingBlock('Reading your quest log.'));
-    else if (phase === 'error') fill(stateEl, stateBlock('sad', 'Scoring is paused', 'Your days are safe. Check your connection, then try again.', '<button class="btn" type="button" id="qRetry">Try again</button>'));
+    else if (phase === 'error') fill(stateEl, stateBlock('sad', 'Scoring is paused', 'Your days are safe. Check your connection, then try again.', '<button class="btn" type="button" id="qRetry"><span class="glyph">A</span>Try again</button>'));
     else if (!s.scores.length) fill(stateEl, stateBlock('sleepy', 'No days scored yet', 'Plan some blocks today. Your first score lands after midnight.', '<button class="btn primary" type="button" id="qPlan"><span class="glyph">A</span>Go to Today</button>'));
     else stateEl.innerHTML = '';
     el.querySelector('#qPlan')?.addEventListener('click', () => window.dispatchEvent(new CustomEvent('recall:go', { detail:'today' })));
@@ -124,7 +123,7 @@ export default view;
 
 // Today's performance rail: a progress line always, the battle scene only when it is switched on (show_idle_game, as before).
 export function mountRail(el){
-  el.innerHTML = `<button class="q-rail" type="button" aria-label="Open the adventure"><span class="q-rail-top"><span class="pixel" data-lv></span><span class="small muted clip" data-rank></span></span><span data-bar></span><span class="q-railscreen" hidden><canvas width="96" height="54" aria-hidden="true"></canvas></span></button><button class="q-toggle small" type="button" data-toggle></button>`;
+  el.innerHTML = `<button class="q-rail" type="button" aria-label="Open Quest"><span class="q-rail-top"><span class="pixel" data-lv></span><span class="small muted clip" data-rank></span></span><span data-bar></span><span class="q-railscreen" hidden><canvas width="96" height="54" aria-hidden="true"></canvas></span></button><button class="q-toggle small" type="button" data-toggle></button>`;
   const open = el.querySelector('.q-rail'), canvas = el.querySelector('canvas'), wrap = el.querySelector('.q-railscreen'), toggle = el.querySelector('[data-toggle]');
   const scene = createScene(canvas); let unfit = null, vis = false;
   open.onclick = () => window.dispatchEvent(new CustomEvent('recall:go', { detail:'quest' }));

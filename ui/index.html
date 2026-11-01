@@ -26,12 +26,17 @@
   <button class="keybtn" id="tabR" type="button" aria-label="Next tab" title="Next tab (R)" hidden><span class="key">R</span></button>
   <span class="spacer"></span>
   <button class="syncpill" id="sync" type="button" hidden title="Sync now"><svg class="px" width="16" height="16" aria-hidden="true"><use id="syncIcon" href="vendor/icons-sprite.svg#i-sync"/></svg><span id="syncText">Synced</span></button>
-  <button class="btn primary" id="newBlock" type="button" aria-label="New block" title="New block" hidden><span class="glyph">A</span><span class="lbl">New block</span></button>
   <button class="btn icon" id="moreBtn" type="button" aria-label="More" title="More" hidden><svg class="px" width="16" height="16" aria-hidden="true"><use href="vendor/icons-sprite.svg#i-more"/></svg></button>
   <button class="btn icon" id="aboutBtn" type="button" aria-label="About" title="About"><svg class="px" width="16" height="16" aria-hidden="true"><use href="vendor/icons-sprite.svg#i-info"/></svg></button>
 </div></header>
 
 <main id="views" hidden></main>
+<footer class="actionbar" id="actionBar" hidden>
+  <button class="btn" id="settingsBtn" type="button"><span class="glyph">Y</span>Settings</button>
+  <span class="spacer"></span>
+  <button class="btn" id="itemX" type="button" hidden><span class="glyph">X</span><span id="itemXLabel"></span></button>
+  <button class="btn primary" id="newBlock" type="button"><span class="glyph">A</span>New block</button>
+</footer>
 
 <div class="login" id="loading"></div>
 
@@ -41,7 +46,7 @@
     <p class="muted">Use your RECALL account. Your plan syncs across your PCs.</p>
     <label class="field">Email<input id="email" type="email" autocomplete="email" required></label>
     <label class="field">Password<input id="password" type="password" autocomplete="current-password" required></label>
-    <span class="small" id="loginErr" role="alert" style="color:var(--danger)"></span>
+    <div class="status bad" id="loginErr" role="alert" hidden><span class="sq"></span><span id="loginErrText"></span></div>
     <button class="btn primary" type="submit"><span class="glyph">A</span>Sign in</button>
   </form>
 </div>
@@ -52,7 +57,7 @@
   <p><b>RECALL</b> version <span id="version">0.1.0</span></p>
   <p>Playful tools with a lot of bark.</p>
   <p class="muted">Made in memory of Rommel.</p>
-  <form method="dialog" class="sheet-actions"><button class="btn" type="submit" data-sfx="back">Close</button></form>
+  <form method="dialog" class="sheet-actions"><button class="btn ghost" type="submit" data-sfx="back"><span class="glyph">B</span>Close</button></form>
 </dialog>
 <div class="boot" id="boot" aria-label="Starting. Press anywhere to skip.">
   <div class="bootbox"><svg viewBox="0 0 64 40" aria-hidden="true">

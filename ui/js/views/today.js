@@ -3,7 +3,7 @@ import * as store from '../store.js';
 import * as P from '../planner.js';
 import { DAY_START, DAY_END, SLOT, fmtClock, priorityLabel, isDone } from '../planner.js';
 import { toast, react, SFX } from '../brand.js';
-import { esc, icon, sheet, menu, confirmSheet, loadingBlock, stateBlock, fill } from '../ui.js';
+import { esc, icon, sheet, menu, confirmSheet, loadingBlock, stateBlock, fill, backBtn, toggle, fieldErr } from '../ui.js';
 import { today, addDays, fmtDate, fmtDuration, mondayOf, nowMinute } from '../time.js';
 import { openExternal, getStatus, onStatus, syncNow } from '../sync.js';
 import { isIgnored } from '../analytics.js';
@@ -354,24 +354,24 @@ function openEditor(task, at = {}){
       <label class="field">Priority<select name="priority">${[[0, 'None'], [1, 'P1'], [2, 'P2'], [3, 'P3'], [4, 'Important']].map(([v, l]) => `<option value="${v}"${v === pri ? ' selected' : ''}>${l}</option>`).join('')}</select></label>
       <label class="field">Colour<span class="row"><input name="color" type="color" value="${esc(task?.color || getComputedStyle(document.documentElement).getPropertyValue('--muted').trim())}" aria-label="Block colour"><button class="btn" type="button" data-nocolor${task?.color ? '' : ' hidden'}>Use person colour</button></span></label></div>
       ${isNew ? `<div class="two"><label class="field">Repeat<select name="repeat"><option value="">Does not repeat</option><option value="daily">Daily</option><option value="weekly">Weekly</option></select></label><label class="field" data-until hidden>Until<input name="until" type="date" value="${addDays(date, 90)}"></label></div>
-      <fieldset class="days" data-days hidden><legend class="small muted">Days</legend>${['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((d, i) => `<label class="check"><input type="checkbox" name="wd" value="${i}"${i < 5 ? ' checked' : ''}>${d}</label>`).join('')}</fieldset>` : ''}
-      <p class="small" role="alert" data-err style="color:var(--danger)"></p>
-      <div class="sheet-actions">${task?.recurrence_rule_id ? '<button class="btn danger-text" type="button" data-stop>Stop series from here</button><button class="btn danger-text" type="button" data-delseries>Delete series</button>' : ''}${isNew ? '' : `<button class="btn danger-text" type="button" data-del>Delete block</button>${bank ? '' : `<button class="btn" type="button" data-done>${isDone(task) ? 'Mark not done' : 'Mark done'}</button>`}<button class="btn" type="button" data-link>Link ClickUp</button>`}
-      <span class="spacer"></span><button class="btn" type="button" data-close>Cancel</button><button class="btn primary" type="submit"><span class="glyph">A</span>Save</button></div></form>`;
+      <fieldset class="field days" data-days hidden><legend class="small muted">Days</legend>${['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((d, i) => toggle(d, i < 5, `data-wd="${i}"`)).join('')}</fieldset>` : ''}
+      <div class="sheet-actions">${task?.recurrence_rule_id ? '<button class="btn ghost danger-text" type="button" data-stop>Stop series from here</button><button class="btn ghost danger-text" type="button" data-delseries>Delete series</button>' : ''}${isNew ? '' : `<button class="btn ghost danger-text" type="button" data-del>Delete block</button>${bank ? '' : `<button class="btn" type="button" data-done>${isDone(task) ? 'Mark not done' : 'Mark done'}</button>`}<button class="btn" type="button" data-link>Link ClickUp</button>`}
+      <span class="spacer"></span>${backBtn('Cancel')}<button class="btn primary" type="submit"><span class="glyph">A</span>Save</button></div></form>`;
     const f = $(b, 'form'), read = () => { const [h, m] = (f.time?.value || '00:00').split(':').map(Number);
       return { title:f.title.value.trim(), notes:f.notes.value.trim(), date:f.date?.value, minute:h * 60 + m, duration:+f.duration.value, personId:f.person.value, priority:+f.priority.value, color:picked ? f.color.value : null }; };
     let picked = !!task?.color;
-    const fail = msg => { $(b, '[data-err]').textContent = msg; SFX.error(); react('sad', 900); };
+    const fail = (el, msg) => { fieldErr(el, msg); SFX.error(); react('sad', 900); };
     f.color.oninput = () => { picked = true; $(b, '[data-nocolor]').hidden = false; };
     $(b, '[data-nocolor]').onclick = e => { picked = false; e.target.hidden = true; };
     $(b, '[data-close]').onclick = () => close();
     if (f.repeat) f.repeat.onchange = () => { $(b, '[data-until]').hidden = !f.repeat.value; $(b, '[data-days]').hidden = f.repeat.value !== 'weekly'; };
-    f.onsubmit = e => { e.preventDefault(); const v = read(); if (!v.title) return fail('Give the block a title.');
-      if (!bank && (!f.date.value || !f.time.value)) return fail('Pick a date and a start time.');
+    f.onsubmit = e => { e.preventDefault(); const v = read(); if (!v.title) return fail(f.title, 'Give the block a title.');
+      if (!bank && !f.date.value) return fail(f.date, 'Pick a date.');
+      if (!bank && !f.time.value) return fail(f.time, 'Pick a start time.');
       if (task){ P.updateTask(task.id, v); close(true); toast('Saved.', 'success'); return; }
-      if (f.repeat.value){ const wd = [...f.querySelectorAll('[name=wd]:checked')].map(i => +i.value);
-        if (f.repeat.value === 'weekly' && !wd.length) return fail('Pick at least one day.');
-        if (f.until.value < v.date) return fail('The end date needs to be after the start.');
+      if (f.repeat.value){ const wd = [...f.querySelectorAll('[data-wd][aria-checked="true"]')].map(i => +i.dataset.wd);
+        if (f.repeat.value === 'weekly' && !wd.length) return fail($(b, '[data-days]'), 'Pick at least one day.');
+        if (f.until.value < v.date) return fail(f.until, 'The end date needs to be after the start.');
         const n = P.createSeries({ ...v, frequency:f.repeat.value, weekdays:wd, until:f.until.value }); close(true); toast(`Added ${n} block${n === 1 ? '' : 's'}.`, 'success'); return; }
       P.createBlock(v); close(true); toast('Saved.', 'success'); };
     if (task){ $(b, '[data-del]').onclick = () => { close(); toast('Block deleted.', null, { label:'Undo', run:P.deleteTask(task.id) }); };
@@ -382,7 +382,7 @@ function openEditor(task, at = {}){
       $(b, '[data-delseries]').onclick = async () => { if (await confirmSheet('Delete series', 'Remove the whole series and all its blocks?', 'Delete series', true, 'Keep series')){ P.deleteSeries(task.recurrence_rule_id); close(true); toast('Series deleted.', 'success'); } };
     }
     f.title.focus();
-  });
+  }, { work:true });
 }
 
 /* ===== Work session sheet: this block is the session, linked ClickUp tasks are what gets batched into it ===== */
@@ -394,7 +394,7 @@ function openSession(task){
       <div class="row sessbar"><button class="btn" type="button" data-start>Start</button><button class="btn" type="button" data-finish>Finish</button><span class="muted small" data-status></span></div>
       <div class="sess"><section><div class="row"><h3>ClickUp work</h3><span class="spacer"></span><button class="btn" type="button" data-suggest hidden></button></div><input data-search aria-label="Search ClickUp" placeholder="Search name, status, person, tag"><div class="sesslist" data-avail></div></section>
       <section><h3>Linked to this block</h3><div class="sesslist" data-linked></div></section></div>
-      <div class="sheet-actions"><button class="btn" type="button" data-close>Close</button></div>`;
+      <div class="sheet-actions">${backBtn()}</div>`;
     let cur = session; const q = s => $(b, s), list = () => P.sessionLinks(session.id);
     const status = () => { q('[data-status]').textContent = cur.status === 'completed' && cur.actual_minutes != null ? `Completed, ${cur.actual_minutes}m` : cap(cur.status); };
     function paint(){
@@ -429,19 +429,14 @@ function tick(){
   if (gridKey && !gridKey.endsWith('|' + today())) render();
   maybeBreak();
 }
-let breakOpen = false;
 function maybeBreak(){
   const d = today(), m = nowMinute(), at = +store.pref('break_reminder_minute', 780);
-  if (breakOpen || store.pref('break_reminders_enabled', '1') === '0' || store.pref('break_reminder_seen', '') === d || m < at || m > at + 180 || document.querySelector('dialog[open]')) return;
+  if (store.pref('break_reminders_enabled', '1') === '0' || store.pref('break_reminder_seen', '') === d || m < at || m > at + 180 || document.querySelector('dialog[open]')) return;
   if (Date.now() < new Date(store.pref('break_reminder_snooze_until', '') || 0).getTime()) return;
-  breakOpen = true;
   const text = '10 to 15 minutes away from the screen. Stand up, water, food, eyes off the monitor.';
   if (!document.hasFocus()) window.__TAURI__?.notification?.sendNotification({ title:'Take a real break', body:text });
-  sheet('Take a real break', (b, close) => {
-    b.innerHTML = `<p>${text}</p><div class="sheet-actions"><button class="btn" type="button" data-snooze data-sfx="back">Snooze 30 min</button><button class="btn primary" type="button" data-ok><span class="glyph">A</span>Got it</button></div>`;
-    $(b, '[data-snooze]').onclick = () => { store.setPref('break_reminder_snooze_until', new Date(Date.now() + 18e5).toISOString()); close('snooze'); };
-    $(b, '[data-ok]').onclick = () => close(true);
-  }).then(v => { breakOpen = false; if (v !== 'snooze') store.setPref('break_reminder_seen', d); });
+  store.setPref('break_reminder_seen', d);
+  toast(`Take a real break. ${text}`, 'new', { label:'Snooze 30 min', run:() => { store.setPref('break_reminder_seen', ''); store.setPref('break_reminder_snooze_until', new Date(Date.now() + 18e5).toISOString()); } });
 }
 
 export default { mount, render, onShow(){ tick(); render(); }, newBlock(){ if (!root) return; openEditor(null); } };

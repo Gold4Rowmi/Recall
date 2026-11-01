@@ -4,12 +4,10 @@
 .tday{height:calc(100% + 10px); margin:-5px; padding:5px; display:grid; grid-template-rows:auto auto minmax(0,1fr); gap:12px; position:relative; overflow:hidden}
 .tbar{display:flex; align-items:center; gap:8px; flex-wrap:wrap}
 .tbar h1{font-size:16px; margin-left:8px; font-weight:400}
-.seg{display:inline-flex; border:1px solid var(--frame); border-radius:6px; background:var(--raised); box-shadow:0 2px 0 var(--frame)}
-.seg button{min-height:44px; padding:0 12px; border:0; background:none; color:var(--ink); font:inherit; cursor:pointer}
-.seg button:first-child{border-radius:5px 0 0 5px} .seg button:last-child{border-radius:0 5px 5px 0}
+.seg{display:inline-flex; gap:2px; padding:3px; border:1px solid var(--frame); border-radius:6px; background:var(--raised)}
+.seg button{min-height:44px; min-width:44px; padding:0 12px; border:0; border-radius:4px; background:none; color:var(--muted); font-family:var(--f-ui); font-size:13px; cursor:pointer}
 .seg button:not([aria-pressed="true"]):hover{background:var(--sunken)}
 .seg button:focus-visible{position:relative; z-index:1}
-.seg button+button{border-left:1px solid var(--frame)}
 .seg button[aria-pressed="true"]{background:var(--ink); color:var(--on-ink)}
 
 .health{display:grid; grid-template-columns:repeat(4,1fr); background:var(--raised); border:1px solid var(--frame); box-shadow:0 2px 0 var(--frame); border-radius:6px; overflow:hidden}
@@ -19,7 +17,7 @@
 .hcell b{font-size:15px}
 .hcell.warn,.hcell.warn span{color:var(--warning)} .hcell.good,.hcell.good span{color:var(--success)}
 
-.tmain{display:grid; grid-template-columns:minmax(0,1fr) 300px; gap:12px; min-height:0; position:relative; overflow:hidden; padding-bottom:2px}
+.tmain{display:grid; grid-template-columns:minmax(0,1fr) 300px; gap:12px; min-height:0; position:relative; overflow:clip; padding-bottom:2px} /* clip: focus landing in the sliding drawer can't scroll it sideways */
 .tleft{display:grid; grid-template-rows:minmax(0,1fr) auto; gap:12px; min-height:0; min-width:0}
 
 .cal{background:var(--raised); border:1px solid var(--frame); box-shadow:0 2px 0 var(--frame); border-radius:6px; overflow:auto; min-height:0}
@@ -45,14 +43,14 @@
 .blk .tt{font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 .blk .tm{color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 .blk.short .tm{display:none}
-.tick{flex:none; display:grid; place-items:center; width:18px; height:18px; padding:0; border:1px solid var(--soft); border-radius:3px; background:var(--raised); color:var(--ink); font:inherit; font-size:12px; line-height:14px; cursor:pointer}
+.tick{flex:none; display:grid; place-items:center; width:18px; height:18px; padding:0; border:1px solid var(--soft); border-radius:4px; background:var(--raised); color:var(--ink); font:inherit; font-size:12px; line-height:14px; cursor:pointer}
 .tick:hover{border-color:var(--ink)}
 /* 44 px target, 20 px visible box */
 .tick.big{position:relative; isolation:isolate; width:44px; height:44px; margin:0; border:0; background:none}
 .tick.big::before{content:""; position:absolute; z-index:-1; left:12px; top:12px; width:20px; height:20px; box-sizing:border-box; border:1px solid var(--soft); border-radius:4px; background:var(--raised)}
 .tick.big:hover::before{border-color:var(--ink)}
-/* Floats over the title and shows on hover or focus, so the title keeps the width; opacity keeps it reachable by keyboard */
-.blk .more{position:absolute; top:2px; right:2px; height:16px; padding:0; border:0; border-radius:2px; background:var(--sunken); color:var(--muted); font:inherit; font-size:12px; line-height:16px; cursor:pointer; opacity:0}
+/* Floats over the title and stays findable without hover, so the title keeps the width */
+.blk .more{position:absolute; top:2px; right:2px; height:16px; padding:0; border:0; border-radius:4px; background:var(--sunken); color:var(--muted); font:inherit; font-size:12px; line-height:16px; cursor:pointer; opacity:.6}
 .blk:hover .more,.blk:focus-within .more{opacity:1}
 .blk.isdone .more{background:var(--raised)}
 .blk .more:hover{color:var(--ink)}
@@ -76,7 +74,7 @@ body.dragging{cursor:grabbing; user-select:none}
 .mday:hover,.mchip:hover,.mmore:hover{color:var(--ink); background:var(--sunken)}
 .mcell.isnow .mday,.mcell.isnow .mday:hover{color:var(--on-ink); background:var(--ink); border-radius:4px}
 .mmore{justify-self:start; border:0; background:none; color:var(--muted); font:inherit; font-size:12px; padding:0 4px; cursor:pointer}
-.mchip{font-size:12px; line-height:18px; padding:0 4px; border-left:3px solid var(--c); background:var(--sunken); border-radius:2px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; cursor:grab; touch-action:none; user-select:none}
+.mchip{font-size:12px; line-height:18px; padding:0 4px; border-left:3px solid var(--c); background:var(--sunken); border-radius:4px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; cursor:grab; touch-action:none; user-select:none}
 .mchip.isdone{color:var(--muted); text-decoration:line-through}
 
 .queue{background:var(--raised); border:1px solid var(--frame); box-shadow:0 2px 0 var(--frame); border-radius:6px; padding:8px 12px}
@@ -84,8 +82,12 @@ body.dragging{cursor:grabbing; user-select:none}
 .qhead{display:flex; align-items:center; justify-content:space-between; gap:8px}
 .qhead h2{font-size:14px; font-weight:600}
 .qempty{padding:8px 0}
-.qrow{display:flex; align-items:center; gap:8px; min-height:48px; padding:2px 0; border-top:1px solid var(--frame); min-width:0}
-.queue .qrow:first-of-type{margin-top:4px}
+/* Tiles. Tighter than the spec's 12 px outside the drawer: the Today queue and the sheets are short on height and width. */
+.qrow{display:flex; align-items:center; gap:8px; min-height:48px; padding:2px 8px; border:1px solid var(--frame); border-radius:4px; background:var(--raised); min-width:0}
+.qrow:hover{background:var(--sunken)}
+.queue .qrow{margin-top:4px}
+.dlist .qrow,.fu-list .qrow{padding:12px; gap:12px}
+.qtext>.clip:first-child{font-weight:600}
 .qrow[data-qid]{cursor:grab; touch-action:none; user-select:none}
 .qrow.isdone .qtext{color:var(--muted); text-decoration:line-through}
 .qdrag{flex:none; width:8px; height:24px; background-image:linear-gradient(var(--faint) 2px,transparent 2px); background-size:4px 6px}
@@ -93,7 +95,7 @@ body.dragging{cursor:grabbing; user-select:none}
 .qacts{flex:none; display:flex; gap:4px}
 .qacts .btn{background:none; box-shadow:none; color:var(--muted)} /* muted at rest, ink on hover: always visible, never loud */
 .qacts .btn:hover,.qacts .btn:focus-visible{color:var(--ink); border-color:var(--ink)}
-.furow{flex-wrap:wrap; padding:8px 0}
+.furow{flex-wrap:wrap}
 .furow .qtext{flex:1 1 calc(100% - 52px); display:block; overflow-wrap:anywhere}
 .furow select{flex:1 1 140px; max-width:none; min-width:140px}
 .qrow select{width:auto; max-width:120px; flex:none}
@@ -132,10 +134,8 @@ body.dragging{cursor:grabbing; user-select:none}
 .dhead{display:flex; align-items:center; gap:8px}
 .dbody{overflow:auto; min-height:0; padding:5px; margin:-5px; display:grid; grid-template-columns:minmax(0,1fr); align-content:start; gap:8px}
 .dbody>p{margin:0}
-.dlist,.fu-list{display:grid; min-width:0}
+.dlist,.fu-list,[data-team]{display:grid; gap:4px; min-width:0}
 .capture{display:flex; gap:8px}
-.check{display:flex; align-items:center; gap:8px; min-height:44px; cursor:pointer}
-.check input{width:20px; min-height:20px; height:20px; flex:none}
 .qshow{display:none}
 .top3{display:grid; gap:4px}
 .top3 .btn{justify-content:flex-start; width:100%; min-width:0}
@@ -146,12 +146,12 @@ body.dragging{cursor:grabbing; user-select:none}
 .days{display:flex; flex-wrap:wrap; gap:4px 12px; border:0; padding:0; margin:0}
 .settings{display:grid; gap:8px}
 .settings .sect{font-size:16px; font-weight:400; margin-top:8px}
-.settings>.btn{justify-self:start}
+.settings>.btn,.settings>.toggle{justify-self:start}
 .keys{display:grid; grid-template-columns:auto 1fr; gap:4px 16px; margin:0; font-size:12px}
 .keys dt{font-weight:600} .keys dd{margin:0; color:var(--muted)}
 .sess{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:12px}
 .sess section{display:grid; gap:8px; align-content:start; min-width:0}
-.sesslist{height:clamp(120px,calc(100vh - 400px),320px); overflow:auto}
+.sesslist{display:grid; gap:4px; align-content:start; height:clamp(120px,calc(100vh - 400px),320px); overflow:auto}
 .sessbar{margin-top:12px}
 
 @media (max-height:720px),(max-width:600px){ /* the queue collapses to its header so the calendar keeps the window */
@@ -174,4 +174,5 @@ body.dragging{cursor:grabbing; user-select:none}
   .tmain{order:1} .health{order:2}
   .tleft{grid-template-rows:auto auto}
   .cal{height:420px}
+  .dlist .qrow{flex-wrap:wrap} .dlist .qacts{flex:1 0 100%; justify-content:flex-end}
 }

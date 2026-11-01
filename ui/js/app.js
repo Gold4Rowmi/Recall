@@ -2,10 +2,9 @@
 import { initBrand, boot, toast, react, setRestPose, setMuted, SFX } from './brand.js';
 import * as store from './store.js';
 import * as sync from './sync.js';
-import { menu, closeMenu, launchbar, isTextEntry, slide, ITEMS } from './ui.js';
+import { menu, closeMenu, loadingBlock, fieldErr, isTextEntry, slide, ITEMS } from './ui.js';
 import { initCursor } from './cursor.js';
 import { startPad } from './gamepad.js';
-import { onSnapshot } from './insights.js';
 import today from './views/today.js';
 import brief from './views/brief.js';
 import command from './views/command.js';
@@ -19,10 +18,10 @@ const ORDER = ['today', 'brief', 'command'];
 const mounted = {}, dirty = new Set(Object.keys(VIEWS));
 let current = null, frame = 0;
 
-// The header dog is the only Rommel: offline wins, then whatever state the visible view declares with data-rest.
+// Offline wins, then a planner with nothing on it says so through data-rest.
 function rest(){
   const v = mounted[current];
-  const pose = sync.getStatus().state === 'offline' ? 'sleepy' : v?.dataset.rest || (v && [...v.querySelectorAll('[data-rest]')].find(e => e.offsetParent)?.dataset.rest);
+  const pose = sync.getStatus().state === 'offline' ? 'sleepy' : v?.dataset.rest;
   setRestPose(pose || 'idle');
 }
 function paint(){ frame = 0; if (dirty.has(current)){ dirty.delete(current); VIEWS[current].render(); } rest(); }
@@ -69,8 +68,16 @@ function wire(){
   $('sync').onclick = async () => { const ok = await sync.syncNow(); toast(ok ? 'Everything is synced.' : 'Couldn’t sync. Your changes are safe here, try again when you’re online.', ok ? 'success' : 'error'); };
   $('newBlock').onclick = () => { go('today'); today.newBlock(); };
   $('moreBtn').onclick = e => menu(e.currentTarget, [
-    { label:'Quest', run:() => go('quest') }, { label:'Follow-ups', run:openFollowUps }, { label:'Export week', run:exportWeek }, { label:'Settings', run:openSettings },
+    { label:'Quest', run:() => go('quest') }, { label:'Follow-ups', run:openFollowUps }, { label:'Export week', run:exportWeek }, ...(getComputedStyle($('settingsBtn')).display === 'none' ? [{ label:'Settings', run:openSettings }] : []), // the action bar is gone at phone width
   ]);
+  $('settingsBtn').onclick = openSettings;
+  // The bar names what X does to the selected item, and pressing it leaves the selection where it is.
+  let xTarget = null;
+  addEventListener('focusin', e => { const f = e.target; if (f.closest('#actionBar')) return;
+    xTarget = f.closest('dialog') ? null : f.matches('[data-x]') ? f : f.closest('.blk,.qrow')?.querySelector('[data-x]');
+    $('itemX').hidden = !xTarget; if (xTarget) $('itemXLabel').textContent = xTarget.dataset.act === 'more' ? 'More' : 'Delete'; });
+  $('itemX').onpointerdown = e => e.preventDefault();
+  $('itemX').onclick = () => { if (xTarget?.isConnected) xTarget.click(); $('itemX').hidden = true; };
   const shift = n => { const i = ORDER.indexOf(current), to = i < 0 ? 0 : i + n; if (ORDER[to]) go(ORDER[to]); else SFX.error(); }; // the ends stop, they don't wrap
   $('tabL').onclick = () => shift(-1);
   $('tabR').onclick = () => shift(1);
@@ -96,7 +103,7 @@ function wire(){
     if (key === 'a' || key === 'enter'){
       const f = document.activeElement;
       if (f?.tagName === 'SELECT'){ e.preventDefault(); try { f.showPicker?.(); } catch {} return; } // a controller press doesn't count as a user gesture
-      const hit = f?.matches('button, a, [role="button"], input[type="checkbox"]') ? f : [...scope().querySelectorAll('.btn.primary')].find(b => b.getClientRects().length) || (!sheetOpen && current === 'today' ? $('newBlock') : null); // New block is Today's main action
+      const hit = f?.matches('button, a, [role="button"]') ? f : [...scope().querySelectorAll('.btn.primary')].find(b => b.getClientRects().length) || (!sheetOpen && current === 'today' ? $('newBlock') : null); // New block is Today's main action
       if (hit){ e.preventDefault(); hit.click(); }
     } else if (key === 'x' || key === 'delete' || key === ' '){ // a focused control with no item action keeps its native Space
       const f = document.activeElement, x = f?.matches('[data-x]') ? f : f?.closest('.blk,.qrow')?.querySelector('[data-x]');
@@ -115,22 +122,20 @@ function wire(){
   });
   const KEYS = { a:'a', b:'b', x:'x', y:'y', l:'l', r:'r', up:'ArrowUp', down:'ArrowDown', left:'ArrowLeft', right:'ArrowRight' };
   startPad(act => {
-    if (act === 'start'){ if (!$('newBlock').hidden && !document.querySelector('dialog[open]')) $('newBlock').click(); return; }
+    if (act === 'start'){ if (!$('actionBar').hidden && !document.querySelector('dialog[open]')) $('newBlock').click(); return; }
     const f = document.activeElement; // the same handlers as the keyboard; a text field would swallow the key, so it goes past it
     (!f || isTextEntry(f) ? document.body : f).dispatchEvent(new KeyboardEvent('keydown', { key:KEYS[act], bubbles:true, cancelable:true }));
   });
-  addEventListener('click', () => requestAnimationFrame(rest)); // sub-tabs and sheets can reveal a different state
-  onSnapshot(() => requestAnimationFrame(rest));
   $('loginForm').addEventListener('submit', async e => {
     const submit = e.target.querySelector('button[type="submit"]');
-    e.preventDefault(); $('loginErr').textContent = ''; submit.disabled = true;
+    e.preventDefault(); $('loginErr').hidden = true; submit.disabled = true;
     try { await sync.signIn($('email').value.trim(), $('password').value); $('password').value = ''; enter(); }
-    catch (err){ console.error(err); $('loginErr').textContent = err.status === 400 ? 'Couldn’t sign in. Check your email and password and try again.' : 'Couldn’t reach RECALL. Check your connection and try again.'; react('sad', 900); SFX.error(); }
+    catch (err){ console.error(err); if (err.status === 400) fieldErr($('password'), 'Couldn’t sign in. Check your email and password and try again.'); else { $('loginErrText').textContent = 'Couldn’t reach RECALL. Check your connection and try again.'; $('loginErr').hidden = false; } react('sad', 900); SFX.error(); }
     submit.disabled = false;
   });
 }
 
-const SHELL = ['tabL', 'tabs', 'tabR', 'sync', 'newBlock', 'moreBtn'];
+const SHELL = ['tabL', 'tabs', 'tabR', 'sync', 'actionBar', 'moreBtn'];
 function enter(){
   $('login').hidden = $('loading').hidden = true; $('views').hidden = false;
   SHELL.forEach(id => { $(id).hidden = false; });
@@ -149,7 +154,8 @@ async function checkUpdate(){
 (async function main(){
   setMuted(localStorage.getItem('recall.muted') === '1'); // before boot: the store isn't open yet
   initBrand(); boot(); wire(); initCursor();
-  $('loading').innerHTML = launchbar();
+  $('loading').innerHTML = loadingBlock('Opening RECALL.');
+  setInterval(() => document.querySelectorAll('[data-pct]').forEach(e => { e.textContent = sync.pullPct(); }), 1000);
   const demo = new URLSearchParams(location.search).has('demo');
   await store.open(demo);
   if (demo) seedDemo();
