@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RECALL</title>
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/views.css">
+<script src="vendor/supabase.js"></script>
+</head>
+<body>
+<header class="head"><div class="in">
+  <svg class="px" id="dog" width="40" height="40" viewBox="0 0 10 10" role="img" aria-label="Rommel"></svg>
+  <span class="pixel appname">RECALL</span>
+  <button class="shoulder" id="tabL" type="button" aria-label="Previous tab" title="Previous tab (L)" hidden><span class="pixel">L</span></button>
+  <nav class="tabs" role="tablist" id="tabs" hidden>
+    <button class="tab" role="tab" data-view="today" type="button">Today</button>
+    <button class="tab" role="tab" data-view="brief" type="button">Brief</button>
+    <button class="tab" role="tab" data-view="command" type="button">Command</button>
+  </nav>
+  <button class="shoulder right" id="tabR" type="button" aria-label="Next tab" title="Next tab (R)" hidden><span class="pixel">R</span></button>
+  <span class="spacer"></span>
+  <button class="syncpill" id="sync" type="button" hidden title="Sync now"><i></i><span id="syncText">Synced</span></button>
+  <button class="btn primary" id="newBlock" type="button" aria-label="New block" title="New block" hidden><span class="glyph">A</span><span class="lbl">New block</span></button>
+  <button class="btn icon" id="moreBtn" type="button" aria-label="More" title="More" hidden>•••</button>
+  <button class="btn icon" id="aboutBtn" type="button" aria-label="About" title="About"><svg class="px" width="16" height="16" viewBox="0 0 8 8" aria-hidden="true"><path fill="currentColor" d="M3 0h2v2H3zM2 3h3v4H2zM2 7h4v1H2z"/></svg></button>
+</div></header>
+
+<main id="views" hidden></main>
+
+<div class="login" id="loading"></div>
+
+<div class="login" id="login" hidden>
+  <form class="card" id="loginForm">
+    <h2>Sign in</h2>
+    <p class="muted">Use your RECALL account. Your plan syncs across your PCs.</p>
+    <label class="field">Email<input id="email" type="email" autocomplete="email" required></label>
+    <label class="field">Password<input id="password" type="password" autocomplete="current-password" required></label>
+    <span class="small" id="loginErr" role="alert" style="color:var(--danger)"></span>
+    <button class="btn primary" type="submit"><span class="glyph">A</span>Sign in</button>
+  </form>
+</div>
+
+<div class="toast" id="toast" role="status" popover="manual"></div>
+<dialog id="about">
+  <svg class="px" style="margin:4px 0 16px" width="117" height="30" viewBox="0 0 39 10" id="aboutLock" aria-label="ROWMI"></svg>
+  <p><b>RECALL</b> version <span id="version">0.1.0</span></p>
+  <p>Playful tools with a lot of bark.</p>
+  <p class="muted">Made in memory of Rommel.</p>
+  <form method="dialog" class="sheet-actions"><button class="btn" type="submit" data-sfx="back">Close</button></form>
+</dialog>
+<div class="boot" id="boot" aria-label="Starting. Press anywhere to skip.">
+  <div class="bootbox"><svg viewBox="0 0 64 40" aria-hidden="true">
+    <rect class="wipe" x="0" y="0" width="64" height="40" style="fill:var(--shell)"/>
+    <g transform="translate(12 15)"><g id="bootDog"></g><g class="bw" id="bootWord"></g><g id="bootEmote" class="bemote"><rect x="4" y="-6" width="2" height="3" fill="#D9893B"/><rect x="4" y="-2" width="2" height="1" fill="#D9893B"/></g></g>
+  </svg><span class="bname pixel">RECALL</span></div>
+</div>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

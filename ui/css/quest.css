@@ -1,0 +1,34 @@
+.quest{margin:0}
+.q-grid{display:grid; grid-template-columns:minmax(0,1fr) 340px; gap:12px; align-items:start}
+.q-side{display:grid; gap:12px; min-width:0}
+.q-stage{display:grid; gap:8px}
+.q-screen{justify-self:center; max-width:100%; border:1px solid var(--frame); overflow:hidden} /* hugs the whole-number canvas, so no grey gutters */
+.q-bar{flex-wrap:wrap}
+.q-screen canvas,.q-railscreen canvas{display:block; image-rendering:pixelated}
+.q-head{display:flex; align-items:baseline; gap:8px; min-width:0; flex-wrap:wrap}
+.q-head b{font-size:16px; -webkit-font-smoothing:none}
+.q-pick{display:flex; align-items:center; gap:8px; font-size:12px; color:var(--muted)}
+.q-pick select{width:auto}
+.q-meter{height:12px; background:var(--sunken); border:1px solid var(--frame); padding:1px}
+.q-meter i{display:block; height:100%; background:var(--chart, var(--shell-deep))}
+.q-meter.boss i{background:var(--danger)} .q-meter.good i{background:var(--ok)} .q-meter.warn i{background:var(--warn)} .q-meter.low i{background:var(--danger)}
+.q-rank{gap:12px; margin-bottom:12px}
+.q-crest{position:relative; flex:none; width:48px}
+.q-crest .pixel{position:absolute; left:0; right:0; top:20px; text-align:center; font-size:16px; line-height:1; color:var(--head-ink); -webkit-font-smoothing:none}
+.q-pips{display:flex; gap:2px; justify-content:center; margin-bottom:2px}
+.q-pips i{width:6px; height:4px; background:var(--grid)} .q-pips i.on{background:var(--chart, var(--shell-deep))}
+.q-under{display:flex; justify-content:space-between; margin-top:4px}
+.q-note{margin-bottom:8px}
+.q-goals,.q-days{list-style:none; margin:0; padding:0; display:grid; gap:4px}
+.q-goals li{display:grid; grid-template-columns:12px minmax(0,1fr) auto; gap:8px; align-items:center; min-height:24px}
+.q-goals i{width:12px; height:12px; border:1px solid var(--frame); background:var(--sunken)}
+.q-goals li.on i{background:var(--ok); border-color:var(--ok)}
+.q-days li{display:flex; align-items:center; gap:8px; min-height:24px}
+.q-cap{display:block; width:36px; height:26px; line-height:22px; text-align:center; font-size:16px; color:var(--ink); border:2px solid var(--ink); box-shadow:0 2px 0 var(--ink); border-radius:4px}
+.q-rail{display:grid; gap:6px; width:100%; min-height:44px; padding:6px 0; border:0; background:none; color:inherit; font:inherit; text-align:left; cursor:pointer}
+.q-rail:hover{background:var(--sunken)}
+.q-rail-top{display:flex; align-items:baseline; gap:8px; min-width:0}
+.q-rail-top .pixel{font-size:16px}
+.q-railscreen{display:flex; justify-content:center; overflow:hidden; background:var(--sunken); border:1px solid var(--frame)}
+.q-toggle{min-height:44px; min-width:44px; padding:0; border:0; background:none; color:var(--muted); font-family:inherit; cursor:pointer; text-decoration:underline}
+@media (max-width:980px){.q-grid{grid-template-columns:1fr}}

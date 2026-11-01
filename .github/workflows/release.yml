@@ -1,0 +1,44 @@
+# Every push to main that touches the app becomes a signed release. Installed copies pick it up on next launch.
+name: Release
+on:
+  push:
+    branches: [main]
+    paths: ['ui/**', 'src-tauri/**', 'tests/**', '.github/workflows/**']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Test
+        run: node --test "tests/*.mjs"
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - name: Stamp version
+        shell: pwsh
+        run: |
+          $v = "0.1.$env:GITHUB_RUN_NUMBER"
+          $f = 'src-tauri/tauri.conf.json'
+          (Get-Content $f -Raw) -replace '"version": "[^"]+"', "`"version`": `"$v`"" | Set-Content $f -NoNewline
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          tauriScript: npx @tauri-apps/cli@2
+          tagName: v__VERSION__
+          releaseName: RECALL __VERSION__
+          releaseBody: See the commit log for what changed.
+          releaseDraft: false
+          prerelease: false
+          includeUpdaterJson: true

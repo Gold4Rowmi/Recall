@@ -1,0 +1,7 @@
+timeblock_planner_v6.1.6/
+src-tauri/target/
+src-tauri/gen/
+*.key
+*.db
+.env
+.claude/
