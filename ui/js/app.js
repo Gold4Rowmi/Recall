@@ -152,7 +152,8 @@ function enter(){
 }
 
 async function checkUpdate(){
-  const t = window.__TAURI__; if (!t) return;
+  const t = window.__TAURI__;
+  if (!t){ if (location.protocol === 'https:') navigator.serviceWorker?.register('sw.js').catch(e => console.warn('offline cache failed', e)); return; }
   $('version').textContent = await t.app.getVersion();
   try { const u = await t.updater.check();
     if (u){ await u.downloadAndInstall(); toast('Update ready. It applies next time you open RECALL.', 'new', { label:'Restart now', run:() => t.process.relaunch() }); }

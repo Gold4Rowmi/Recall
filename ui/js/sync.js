@@ -165,8 +165,12 @@ async function begin(session){
 
 export async function start(){
   if (ctx.demo){ setStatus('synced'); return true; }
-  const { data:{ session } } = await sb.auth.getSession();
-  if (!session) return false;
+  const { data:{ session }, error } = await sb.auth.getSession();
+  if (!session){
+    if (error?.name !== 'AuthRetryableFetchError' || !ctx.workspaceId) return false;
+    setStatus('offline'); addEventListener('online', start, { once:true }); // the token expired with no signal: keep working from the cache, not the sign-in page
+    return true;
+  }
   begin(session).catch(e => { console.error(e); setStatus(navigator.onLine ? 'error' : 'offline', FAILED); });
   addEventListener('online', () => { retryMs = 2000; push(); pull().catch(() => {}); });
   addEventListener('focus', () => { pull(['tasks']).catch(() => {}); if (Date.now() - (store.getMeta('clickupAt') || 0) > CLICKUP_EVERY) syncClickUp().catch(console.error); });

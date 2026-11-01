@@ -31,6 +31,8 @@ jobs:
         run: |
           v=$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName -q .tagName)
           sed -i "s|<span id=\"version\">[^<]*|<span id=\"version\">${v#v}|" ui/index.html
+          files=$(cd ui && find . -type f ! -name sw.js | sed 's|^\./||' | jq -Rsc 'split("\n") | map(select(length > 0))')
+          sed -i "s|^const VERSION = .*|const VERSION = '${v#v}', FILES = ${files};|" ui/sw.js
       - uses: actions/upload-pages-artifact@v3
         with:
           path: ui
