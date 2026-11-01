@@ -2,6 +2,8 @@
 // The knight is its own sprite, a helmeted figure with nothing of Rommel in it: one rule per screen keeps him in the header.
 // Each style re-renders the same cells.
 
+import { calm } from './brand.js';
+
 // Art palette: the one kept exception to tokens. Scene pixels are game art inside the canvas, they stay the same in both themes, so they cannot follow CSS tokens.
 const PX = { banner:'#C0352F', steel:'#C9CED6', shine:'#F4F5F7', ink:'#16181D', belt:'#3A3F48', paper:'#ECEEF1', hilt:'#5B6270', white:'#FFFFFF', black:'#000000', cream:'#FFFDF7', parchment:'#FFFBE8', asciiInk:'#17231D', wine:'#8B2F34', slate:'#26313A', sparkPale:'#FFF1A8', sparkRed:'#FF795F', sparkGold:'#F8D25B', blockGold:'#FFD46A', blockRed:'#EF6B55', blobGold:'#FFE08A', blobRed:'#FF8A72', hurtBlock:'#C9434A', hurtBit:'#F05252', hurtBlob:'#DB5961', hurtLine:'#FF5B5B', hurtText:'#7A2830', blobText:'#56323A', heal:'#E9FFF0', healAscii:'#1F7A4D' };
 const AREAS = { // named by the rules, so game-rules.js holds no colour
@@ -148,6 +150,7 @@ function attackFx(g, style, cx, cy, step, power){
     else if (style === 'Blob') disk(g, x, y, i % 3 === 0 ? 2 : 1, i % 2 ? PX.blobGold : PX.blobRed);
     else line(g, cx + a * 2, cy + b * 2, x, y, i % 2 ? PX.sparkPale : PX.sparkRed); });
   if (style === '8-bit') rect(g, cx - 1, cy - 1, 3, 3, PX.white);
+  if (style === '8-bit') [[1,0],[-1,0],[0,1],[0,-1]].forEach(([a, b]) => text(g, label, cx - 4 + a, cy - 13 + b, PX.ink)); // white alone vanishes on a pale sky
   text(g, label, cx - 4, cy - 13, style === 'Block' ? PX.slate : style === 'Blob' ? PX.blobText : PX.white);
 }
 function hurtFx(g, style, cx, cy, power){
@@ -162,7 +165,6 @@ function hurtFx(g, style, cx, cy, power){
 export function createScene(canvas){
   const g = canvas.getContext('2d', { alpha:false });
   let state = null, tick = 0, queue = [], event = null, eventAt = 0, raf = 0, last = 0, running = false, drawn = -1;
-  const reduce = matchMedia('(prefers-reduced-motion: reduce)');
 
   function size(){ const scale = state?.style === 'ASCII' ? 2 : 1, w = W * scale, h = H * scale; if (canvas.width !== w || canvas.height !== h){ canvas.width = w; canvas.height = h; canvas.dispatchEvent(new Event('refit')); } }
 
@@ -186,6 +188,7 @@ export function createScene(canvas){
 
   function step(now){
     raf = 0; if (!running) return;
+    if (calm()){ running = false; draw(); return; }
     if (now - last >= TICK){ last = now; tick++;
       if (event && tick - eventAt > DURATION[event.kind]){ event = null; state?.onEventEnd?.(); }
       if (!event && queue.length){ event = queue.shift(); eventAt = tick; }
@@ -196,8 +199,9 @@ export function createScene(canvas){
 
   return {
     setState(s){ state = s; draw(); },
-    play(e){ queue.push(e); queue = queue.slice(-4); if (!running && !reduce.matches) this.start(); },
-    start(){ draw(); if (running || reduce.matches) return; running = true; raf = requestAnimationFrame(step); },
+    play(e){ queue.push(e); queue = queue.slice(-4); if (!running && !calm()) this.start(); },
+    start(){ draw(); if (running || calm()) return; running = true; raf = requestAnimationFrame(step); },
+    shown:() => canvas.getClientRects().length > 0,
     stop(){ running = false; if (raf) cancelAnimationFrame(raf); raf = 0; },
   };
 }

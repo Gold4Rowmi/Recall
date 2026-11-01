@@ -164,6 +164,10 @@ export function previewDamage(date, mode, tasksOn){
 
 // Score every past day that has no row yet. state: { scores, achievements, bosses, hpBase, hpFrom }.
 // opts: { today, started, mode, tasksOn(date) }. Returns only the new rows plus the progress they lead to. Same input, same rows.
+// Scene events wait until a scene is on screen. holdEvents keeps the last few; releaseEvents plays them once and returns what is still held.
+export const holdEvents = (held, events, keep = 3) => [...held, ...events].slice(-keep);
+export function releaseEvents(held, shown){ if (!shown.length) return held; held.forEach(e => shown.forEach(s => s.play(e))); return []; }
+
 export function finalize(state, opts){
   const { today, started, mode, tasksOn } = opts;
   const scores = [...state.scores], achievements = [...state.achievements], bosses = [...state.bosses];

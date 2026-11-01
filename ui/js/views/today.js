@@ -10,7 +10,8 @@ import { isIgnored } from '../analytics.js';
 import * as quest from './quest.js';
 import { mountFollowUps, renderFollowUps, personOptions } from './utilities.js';
 
-const SLOT_PX = 24, PX = SLOT_PX / SLOT;
+const phone = matchMedia('(max-width:600px)');
+let SLOT_PX = 24, PX = SLOT_PX / SLOT; // a 30 minute block has to be a 44 px target on a phone
 const S = { mode:localStorage.getItem('recall.mode') || (matchMedia('(max-width:600px)').matches ? 'day' : 'week'), date:today(), drawer:null, drag:null };
 const $ = (root, sel) => root.querySelector(sel);
 const person = id => store.get('workspace_people', id);
@@ -59,6 +60,8 @@ function mount(el){
   cal.addEventListener('pointerdown', onCalDown);
   queueEl.addEventListener('pointerdown', onQueueDown);
   drawer.addEventListener('pointerdown', onQueueDown);
+  [cal, queueEl, drawer].forEach(x => x.addEventListener('touchmove', e => { if (S.drag) e.preventDefault(); }, { passive:false })); // once a held block lifts, the finger drags it instead of the page
+  el.addEventListener('contextmenu', e => { if (S.drag) e.preventDefault(); });
   el.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.matches('.blk,.mchip')){ e.preventDefault(); openEditor(store.get('tasks', e.target.dataset.id)); } });
   addEventListener('keydown', e => { if (el.hidden || document.querySelector('dialog[open], .menu') || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return; if (e.key === 'ArrowLeft'){ SFX.tick(); step(-1); } else if (e.key === 'ArrowRight'){ SFX.tick(); step(1); } else if (e.key === 'Escape' && S.drawer){ SFX.back(); setDrawer(null); } });
   addEventListener('recall:drawer', e => setDrawer(e.detail));
@@ -121,13 +124,14 @@ function renderGrid(){
   const dates = visibleDates(), all = dates.flatMap(P.dayTasks), now = today();
   const lo = Math.min(DAY_START, ...all.map(t => Math.floor(t.start_minute / 60) * 60));
   const hi = Math.max(DAY_END, ...all.map(t => Math.ceil((t.start_minute + t.duration_minutes) / 60) * 60));
-  const key = `${S.mode}|${dates[0]}|${lo}|${hi}|${now}`;
+  SLOT_PX = phone.matches ? 44 : 24; PX = SLOT_PX / SLOT;
+  const key = `${S.mode}|${dates[0]}|${lo}|${hi}|${now}|${SLOT_PX}`;
   if (key !== gridKey){
     gridKey = key; range = [lo, hi]; blocks.clear(); cal._html = null;
     const hours = []; for (let h = lo; h < hi; h += 60) hours.push(`<i style="top:${yOf(h)}px">${fmtClock(h).replace(':00', '')}</i>`);
     cal.className = 'cal grid';
     cal.innerHTML = `<div class="calhead" style="--cols:${dates.length}"><span></span>${dates.map(d => `<b class="${d === now ? 'isnow' : ''}">${esc(fmtDate(d, dates.length > 1 ? { weekday:'short', day:'numeric' } : { weekday:'long', day:'numeric' }))}</b>`).join('')}</div>
-      <div class="calbody" style="--cols:${dates.length};height:${yOf(hi)}px"><div class="gutter">${hours.join('')}</div>${dates.map(d => `<div class="col${d === now ? ' isnow' : ''}" data-date="${d}">${d === now ? '<div class="nowline"></div>' : ''}</div>`).join('')}</div>`;
+      <div class="calbody" style="--cols:${dates.length};--slot:${SLOT_PX}px;height:${yOf(hi)}px"><div class="gutter">${hours.join('')}</div>${dates.map(d => `<div class="col${d === now ? ' isnow' : ''}" data-date="${d}">${d === now ? '<div class="nowline"></div>' : ''}</div>`).join('')}</div>`;
     placeNow();
     cal.scrollTop = Math.max(0, yOf(dates.includes(now) ? nowMinute() - 120 : 8 * 60));
   }
@@ -137,7 +141,7 @@ function renderGrid(){
     for (const t of tasks){
       seen.add(t.id);
       const { lane, of } = lay.get(t.id), done = isDone(t), p = priorityLabel(t.priority_hint), c = colourOf(t);
-      const sig = [t.title, t.start_minute, t.duration_minutes, done, p, c, lane, of].join('|');
+      const sig = [t.title, t.start_minute, t.duration_minutes, done, p, c, lane, of, SLOT_PX].join('|');
       let el = blocks.get(t.id);
       if (!el){ el = document.createElement('div'); el.className = 'blk'; el.dataset.id = t.id; el.tabIndex = 0; el.setAttribute('role', 'button'); blocks.set(t.id, el); }
       if (el.parentNode !== col) col.appendChild(el);
@@ -157,7 +161,7 @@ function renderMonth(){
   const first = S.date.slice(0, 8) + '01', start = mondayOf(first), now = today(), month = S.date.slice(0, 7);
   const cells = Array.from({ length:42 }, (_, i) => { const d = addDays(start, i), tasks = P.dayTasks(d);
     return `<div class="mcell${d.slice(0, 7) === month ? '' : ' off'}${d === now ? ' isnow' : ''}" data-date="${d}"><button class="mday" type="button" data-act="day" aria-label="Open ${esc(fmtDate(d))}">${+d.slice(8)}</button>
-      ${tasks.slice(0, 3).map(t => `<div class="mchip${isDone(t) ? ' isdone' : ''}" data-id="${esc(t.id)}" tabindex="0" role="button" style="--c:${esc(colourOf(t))}">${esc(t.title)}</div>`).join('')}${tasks.length > 3 ? `<button class="mmore" type="button" data-act="day">${tasks.length - 3} more</button>` : ''}</div>`; }).join('');
+      ${tasks.slice(0, 3).map(t => `<div class="mchip${isDone(t) ? ' isdone' : ''}" data-id="${esc(t.id)}" tabindex="0" role="button" style="--c:${esc(colourOf(t))}">${esc(t.title)}</div>`).join('')}${tasks.length > 3 ? `<button class="mmore" type="button" data-act="day">${tasks.length - 3} more</button>` : ''}${tasks.length ? `<button class="mcount" type="button" data-act="day" aria-label="${tasks.length} block${tasks.length === 1 ? '' : 's'}">${tasks.length}</button>` : ''}</div>`; }).join('');
   cal.className = 'cal month';
   write(cal, `<div class="mhead">${['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(d => `<b>${d}</b>`).join('')}</div><div class="mgrid">${cells}</div>`);
 }
@@ -258,10 +262,13 @@ function onCalDown(e){
 function onQueueDown(e){ if (e.button !== 0 || e.target.closest('button,select,input')) return; const r = e.target.closest('[data-qid]'); if (r) arm(e, store.get('tasks', r.dataset.qid), r, 'queue'); }
 
 function arm(e, task, el, kind){
-  const x0 = e.clientX, y0 = e.clientY, rect = el.getBoundingClientRect(), grabY = kind === 'move' && S.mode !== 'month' ? y0 - rect.top : 8;
-  const move = ev => { if (Math.hypot(ev.clientX - x0, ev.clientY - y0) < 4) return; off(); beginDrag(ev, task, el, kind, grabY); };
-  const off = () => { removeEventListener('pointermove', move); removeEventListener('pointerup', off); };
-  addEventListener('pointermove', move); addEventListener('pointerup', off);
+  const x0 = e.clientX, y0 = e.clientY, rect = el.getBoundingClientRect(), grabY = kind === 'move' && S.mode !== 'month' ? y0 - rect.top : 8, touch = e.pointerType === 'touch';
+  let last = e, hold = 0;
+  const lift = ev => { off(); beginDrag(ev, task, el, kind, grabY); };
+  const move = ev => { last = ev; if (Math.hypot(ev.clientX - x0, ev.clientY - y0) < (touch ? 8 : 4)) return; touch ? off() : lift(ev); }; // a finger that moves before the hold is a scroll
+  const off = () => { clearTimeout(hold); removeEventListener('pointermove', move); removeEventListener('pointerup', off); removeEventListener('pointercancel', off); };
+  addEventListener('pointermove', move); addEventListener('pointerup', off); addEventListener('pointercancel', off);
+  if (touch) hold = setTimeout(() => lift(last), 280);
 }
 
 function beginDrag(ev, task, el, kind, grabY){
@@ -302,7 +309,7 @@ function beginDrag(ev, task, el, kind, grabY){
   const schedule = () => { if (!d.frame) d.frame = requestAnimationFrame(frame); };
   const onMove = e => { d.px = e.clientX; d.py = e.clientY; schedule(); };
   function end(commit){
-    removeEventListener('pointermove', onMove); removeEventListener('pointerup', onUp); removeEventListener('keydown', onKey, true);
+    removeEventListener('pointermove', onMove); removeEventListener('pointerup', onUp); removeEventListener('pointercancel', onCancel); removeEventListener('keydown', onKey, true);
     cancelAnimationFrame(d.frame); clearPush(); chip.remove(); ghost.remove(); el.classList.remove('lifted'); document.body.classList.remove('dragging');
     queueEl.classList.remove('dropping'); cal.querySelector('.droptarget')?.classList.remove('droptarget');
     S.drag = null; swallowClick = true; setTimeout(() => { swallowClick = false; });
@@ -310,8 +317,9 @@ function beginDrag(ev, task, el, kind, grabY){
     render();
   }
   const onUp = () => { frame(); end(true); };
+  const onCancel = () => end(false);
   const onKey = e => { if (e.key === 'Escape'){ e.stopPropagation(); SFX.back(); end(false); } };
-  addEventListener('pointermove', onMove); addEventListener('pointerup', onUp); addEventListener('keydown', onKey, true);
+  addEventListener('pointermove', onMove); addEventListener('pointerup', onUp); addEventListener('pointercancel', onCancel); addEventListener('keydown', onKey, true);
   schedule();
 }
 

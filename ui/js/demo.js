@@ -16,6 +16,7 @@ export function seedDemo(){
     .forEach(([title, minute, duration, priority]) => newTask({ title, date:d, minute, duration, priority, personId:me.id }));
   [-1, -2, -3].forEach(n => [['Inbox zero', 540, 30], ['Campaign notes', 600, 60]].forEach(([title, minute, duration]) => {
     const t = newTask({ title, date:addDays(d, n), minute, duration, personId:me.id }); if (n !== -1 || minute === 540) store.put('tasks', { ...t, state:'completed', completed_at:new Date().toISOString() }); }));
+  store.setPref('game_adventure_started', addDays(d, -3)); // so the Quest scene has days to show
   ['Book the photo shoot', 'Draft Q1 calendar'].forEach(title => newTask({ title, duration:60, personId:me.id }));
   ['Chase the print quote', 'Send the brief'].forEach(title => store.put('reminders', { id:crypto.randomUUID(), title, created_by:store.ctx.userId, created_at:new Date().toISOString(), completed_at:null, deleted_at:null }));
   store.pendingEntries().forEach(e => store.settle(e)); // demo rows never go anywhere

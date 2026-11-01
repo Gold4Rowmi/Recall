@@ -22,7 +22,7 @@ const retry = '<button class="btn" type="button" data-retry><span class="glyph">
 export const panelState = () => insights.lastError() ? stateBlock('sad', 'Couldn’t read the numbers', 'Your plan is safe. Try again.', retry) : loadingBlock('Reading the numbers.');
 export const staleBanner = () => insights.lastError() && insights.snapshot() ? `<div class="status warn" role="status"><span class="sq"></span><span>These numbers may be out of date.</span>${retry}</div>` : '';
 export const noClickUp = title => stateBlock('sleepy', title, 'Connect ClickUp in Settings, then sync.', '<button class="btn primary" type="button" data-settings><span class="glyph">A</span>Open Settings</button>');
-export const sharedClick = b => { if ('retry' in b.dataset) insights.refresh(); else if ('settings' in b.dataset) openSettings(); else if (b.dataset.url) openExternal(b.dataset.url); };
+export const sharedClick = b => { if ('retry' in b.dataset) insights.retry(); else if ('settings' in b.dataset) openSettings(); else if (b.dataset.url) openExternal(b.dataset.url); };
 
 // One buzz per failure, whichever screen shows it first.
 let said = null;

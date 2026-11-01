@@ -1,6 +1,6 @@
 ﻿import test from 'node:test';
 import assert from 'node:assert/strict';
-import { finalize, scoreDay, dayStats, hpDelta, replayHp, levelFromXp, rankForLevel, campaign, weekBoss, bossHp, totalXp, streak, quoteFor, QUOTES, planningReadiness, achievementsFor, MAX_HP, RESPAWN_HP } from '../ui/js/game-rules.js';
+import { holdEvents, releaseEvents, finalize, scoreDay, dayStats, hpDelta, replayHp, levelFromXp, rankForLevel, campaign, weekBoss, bossHp, totalXp, streak, quoteFor, QUOTES, planningReadiness, achievementsFor, MAX_HP, RESPAWN_HP } from '../ui/js/game-rules.js';
 
 const block = (done, minutes = 60, priority = 0) => ({ state:done ? 'completed' : 'scheduled', duration_minutes:minutes, priority_hint:priority });
 const day = plan => d => plan[d] || [];
@@ -102,4 +102,16 @@ test('existing cloud history adds up to the 375 XP already banked', () => {
 test('streak counts 60+ days through yesterday until today is scored', () => {
   const s = [{ score_date:'2026-10-05', score:70 }, { score_date:'2026-10-06', score:60 }, { score_date:'2026-10-04', score:59 }];
   assert.equal(streak(s, '2026-10-07'), 2); assert.equal(streak(s, '2026-10-06'), 2); assert.equal(streak(s, '2026-10-09'), 0);
+});
+
+test('held scene events wait for a visible scene and play once', () => {
+  const played = [], scene = { play:e => played.push(e) };
+  let held = holdEvents([], [{ kind:'hurt' }, { kind:'attack' }, { kind:'attack' }, { kind:'boss_clear' }]);
+  assert.equal(held.length, 3); assert.equal(held.at(-1).kind, 'boss_clear');
+  held = releaseEvents(held, []);
+  assert.equal(held.length, 3); assert.equal(played.length, 0);
+  held = releaseEvents(held, [scene]);
+  assert.deepEqual(held, []); assert.equal(played.length, 3);
+  held = releaseEvents(held, [scene]);
+  assert.equal(played.length, 3);
 });

@@ -40,9 +40,12 @@ function bank(){
   finally { running = false; repaint(); }
 }
 
+// Overnight events wait for a scene someone can see, even across a restart. Whoever sees them first plays them, once.
+function release(){ const held = store.getMeta('quest_held'); if (held?.length) store.setMeta('quest_held', rules.releaseEvents(held, [...scenes].filter(s => s.shown()))); }
+
 // One short moment, whatever happened overnight. Nothing here ever opens a modal.
 function celebrate(out, oldXp){
-  out.events.slice(-3).forEach(e => scenes.forEach(s => s.play(e)));
+  store.setMeta('quest_held', rules.holdEvents(store.getMeta('quest_held') || [], out.events));
   if (!out.scores.length) return;
   const gained = out.progress.xp - oldXp, oldLv = rules.levelFromXp(oldXp), lv = out.progress.level, boss = out.bosses.at(-1);
   if (boss) { toast(`${boss.boss_name} defeated. +${gained} XP banked.`, 'big'); return; }
@@ -68,7 +71,7 @@ function shield(tier, roman){ // pixel crest; a pip fills for each rank
   return `<div class="q-crest" aria-hidden="true"><div class="q-pips">${pips}</div>${icon('shield', 32)}<span class="pixel">${roman}</span></div>`;
 }
 
-function repaint(){ view.dirty(); rails.forEach(r => r.render()); }
+function repaint(){ view.dirty(); rails.forEach(r => r.render()); release(); }
 
 const view = {
   el:null, scene:null, unfit:null,
@@ -87,7 +90,7 @@ const view = {
     el.addEventListener('click', e => { if (e.target.closest('#qRetry')){ phase = 'ready'; doneFor = null; idle(bank); repaint(); } });
     this.unfit = fitCanvas(el.querySelector('#qCanvas'), el.querySelector('.q-stage'));
   },
-  onShow(){ idle(bank); this.render(); this.scene.start(); },
+  onShow(){ idle(bank); this.render(); this.scene.start(); release(); },
   onHide(){ this.scene.stop(); },
   render(){
     const el = this.el, d = today(), s = gameState(), b = boss(d), hp = rules.replayHp(s.hpBase, s.scores);
@@ -102,7 +105,7 @@ const view = {
     else stateEl.innerHTML = '';
     el.querySelector('#qPlan')?.addEventListener('click', () => window.dispatchEvent(new CustomEvent('recall:go', { detail:'today' })));
     if (!blocked){
-      this.scene.setState(sceneState(b));
+      this.scene.setState(sceneState(b)); this.scene.start(); // Motion may have just come back on
       el.querySelector('#qCanvas').setAttribute('aria-label', `The knight faces ${b.name} in ${b.area.name}.`);
       el.querySelector('#qBossHead').innerHTML = `<div class="q-head"><b class="pixel">${esc(b.name)}</b><span class="muted small">${esc(b.area.name)}, stage ${b.campaign.stage}</span><span class="spacer"></span><span class="small">${b.defeated ? 'Clear' : b.remaining + ' HP left'}</span></div>${meter('Boss damage', b.damage, b.hp, 'boss')}`;
       el.querySelector('#qFoot').innerHTML = `<div class="q-head"><span class="small">Knight HP ${hp} of ${rules.MAX_HP}</span><span class="spacer"></span><span class="small muted">${b.campaign.defeats} ${b.campaign.defeats === 1 ? 'boss' : 'bosses'} cleared</span></div>${meter('Knight health', hp, rules.MAX_HP, hp > 45 ? 'good' : hp > 20 ? 'warn' : 'low')}`;

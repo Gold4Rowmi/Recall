@@ -3,20 +3,20 @@ import { initBrand, boot, toast, react, setRestPose, setMuted, setVolume, setDog
 import * as store from './store.js';
 import * as sync from './sync.js';
 import { menu, closeMenu, loadingBlock, fieldErr, isTextEntry, slide, ITEMS } from './ui.js';
-import { initCursor } from './cursor.js';
+import { initCursor, keep, keyed } from './cursor.js';
 import { startPad } from './gamepad.js';
 import today from './views/today.js';
 import brief from './views/brief.js';
 import command from './views/command.js';
 import quest from './views/quest.js';
-import { openFollowUps, exportWeek, openSettings } from './views/utilities.js';
+import { openFollowUps, exportWeek, openSettings, applyMotion } from './views/utilities.js';
 import { seedDemo } from './demo.js';
 
 const $ = id => document.getElementById(id);
 const VIEWS = { today, brief, command, quest };
 const ORDER = ['today', 'brief', 'command'];
 const mounted = {}, dirty = new Set(Object.keys(VIEWS));
-let current = null, frame = 0;
+let current = null, frame = 0, xTarget = null;
 
 // Offline wins, then a planner with nothing on it says so through data-rest.
 function rest(){
@@ -25,12 +25,14 @@ function rest(){
   const panelDog = !!v && [...v.querySelectorAll('.state svg')].some(s => s.getClientRects().length); // one Rommel per screen
   setRestPose(panelDog ? 'idle' : pose || 'idle');
 }
-function paint(){ frame = 0; if (dirty.has(current)){ dirty.delete(current); VIEWS[current].render(); } rest(); }
+const clearX = () => { xTarget = null; $('itemX').hidden = true; };
+const gone = el => !el?.isConnected || !el.getClientRects().length;
+function paint(){ frame = 0; if (dirty.has(current)){ dirty.delete(current); VIEWS[current].render(); } rest(); if (xTarget && gone(xTarget)) clearX(); keep(); }
 const schedule = () => { if (!frame) frame = requestAnimationFrame(paint); };
 
 export function go(name){
   if (name === current) return;
-  closeMenu();
+  closeMenu(); clearX();
   const from = current;
   if (current){ mounted[current].hidden = true; VIEWS[current].onHide?.(); }
   current = name;
@@ -51,10 +53,10 @@ export const invalidate = (...names) => { (names.length ? names : Object.keys(VI
 store.on(() => invalidate());
 window.addEventListener('recall:go', e => go(e.detail));
 
-let lastState = 'idle', syncFrom = 0;
+let lastState = 'idle', syncFrom = 0, outage = false;
 function syncPill(s){
   if (s.state !== lastState){ // whine for a failure, awoo for a long job that finished while you were away
-    if (s.state === 'error') SFX.whine(); else if (s.state === 'syncing') syncFrom = Date.now(); else if (s.state === 'synced' && document.hidden && Date.now() - syncFrom > 10000) SFX.awoo();
+    if (s.state === 'error'){ if (!outage) SFX.whine(); outage = true; } else if (s.state === 'syncing') syncFrom = Date.now(); else if (s.state === 'synced'){ outage = false; if (document.hidden && Date.now() - syncFrom > 10000) SFX.awoo(); } // once per outage: the retries back off for minutes
     lastState = s.state; }
   const el = $('sync'), n = store.pendingCount();
   $('syncIcon').setAttribute('href', `vendor/icons-sprite.svg#i-${s.state === 'offline' ? 'offline' : s.state === 'error' ? 'warning' : 'sync'}`);
@@ -77,12 +79,11 @@ function wire(){
   ]);
   $('settingsBtn').onclick = openSettings;
   // The bar names what X does to the selected item, and pressing it leaves the selection where it is.
-  let xTarget = null;
   addEventListener('focusin', e => { const f = e.target; if (f.closest('#actionBar')) return;
     xTarget = f.closest('dialog') ? null : f.matches('[data-x]') ? f : f.closest('.blk,.qrow')?.querySelector('[data-x]');
     $('itemX').hidden = !xTarget; if (xTarget) $('itemXLabel').textContent = xTarget.dataset.act === 'more' ? 'More' : 'Delete'; });
   $('itemX').onpointerdown = e => e.preventDefault();
-  $('itemX').onclick = () => { if (xTarget?.isConnected) xTarget.click(); $('itemX').hidden = true; };
+  $('itemX').onclick = () => { if (!gone(xTarget)) xTarget.click(); clearX(); };
   const shift = n => { const i = ORDER.indexOf(current), to = i < 0 ? 0 : i + n; if (ORDER[to]) go(ORDER[to]); else { SFX.error(); bonk($('tabs')); } }; // the ends stop, they don't wrap
   $('tabL').onclick = () => shift(-1);
   $('tabR').onclick = () => shift(1);
@@ -92,21 +93,27 @@ function wire(){
   const back = () => { const d = topSheet();
     if (d) d.close();
     else if (document.querySelector('.menu')){ SFX.back(); closeMenu(); }
-    else if (current === 'quest'){ SFX.back(); go('today'); }
+    else if (current === 'quest') go('today');
     else { SFX.tick(); document.dispatchEvent(new KeyboardEvent('keydown', { key:'Escape', bubbles:true })); } }; // Today closes its drawer on this
+  const walk = (d, leave) => { const items = [...scope().querySelectorAll(ITEMS)].filter(b => b.getClientRects().length); if (!items.length) return;
+    const at = items.indexOf(document.activeElement), next = at < 0 ? items[0] : items[at + d] || (leave && items[at - d]);
+    if (next){ next.focus(); SFX.tick(); } else { SFX.error(); bonk(items[at]); } }; // the ends stop
   let typed = '', backT = 0;
   addEventListener('keydown', e => {
     const sheetOpen = !!document.querySelector('dialog[open]');
-    if (e.ctrlKey && current && !sheetOpen && (e.key === 'Tab' || e.key === ',')){ e.preventDefault(); e.key === ',' ? openSettings() : shift(e.shiftKey ? -1 : 1); return; } // browsers keep Ctrl+Tab for themselves
+    if (e.ctrlKey && current && !sheetOpen && (e.key === 'Tab' || e.key === ',')){ e.preventDefault(); keyed(); if (e.key === ','){ SFX.click(); openSettings(); } else shift(e.shiftKey ? -1 : 1); return; } // browsers keep Ctrl+Tab for themselves
     if (e.target.type === 'range' && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')){ // the slider keeps left and right; a controller's key is synthetic, so step it here
       if (!e.isTrusted){ e.key === 'ArrowLeft' ? e.target.stepDown() : e.target.stepUp(); e.target.dispatchEvent(new Event('input', { bubbles:true })); e.target.dispatchEvent(new Event('change', { bubbles:true })); }
       return; }
-    if (isTextEntry(e.target) || e.ctrlKey || e.metaKey || e.altKey || e.defaultPrevented) return;
+    // Up and down walk past a one-line field, so walking through a time or a number never changes it. Esc leaves one on a page; in a sheet it closes the sheet.
+    const walksOut = e.target.tagName === 'INPUT' && (e.key === 'ArrowUp' || e.key === 'ArrowDown' || (e.key === 'Escape' && !sheetOpen));
+    if ((isTextEntry(e.target) && !walksOut) || e.ctrlKey || e.metaKey || e.altKey || e.defaultPrevented) return;
     const key = e.key.toLowerCase(), wasTyping = typed === 'bubb', menuOpen = !!document.querySelector('.menu');
     clearTimeout(backT); // b waits a beat: if another key follows, it was the word bubbles
     typed = (typed + key).slice(-4);
     if (e.repeat && (key.length === 1 || key === 'enter' || key === 'delete')) return;
     if (!current){ if (key === 'a' && !$('login').hidden) $('loginForm').requestSubmit(); return; } // signed out: nothing to move through yet
+    if (key === 'escape' && isTextEntry(e.target)) return walk(1, true);
     if (key === 'b'){ backT = setTimeout(back, e.isTrusted ? 250 : 0); return; } // a controller's B can't be the start of a word
     if (key === 'a' || key === 'enter'){
       const f = document.activeElement;
@@ -117,21 +124,19 @@ function wire(){
       const f = document.activeElement, x = f?.matches('[data-x]') ? f : f?.closest('.blk,.qrow')?.querySelector('[data-x]');
       if (x){ e.preventDefault(); x.click(); }
     } else if (key === 'arrowdown' || key === 'arrowup' || ((key === 'arrowleft' || key === 'arrowright') && (sheetOpen || menuOpen || current === 'brief' || current === 'quest'))){ // on Today and Command, left and right belong to the view
-      const items = [...scope().querySelectorAll(ITEMS)].filter(b => b.getClientRects().length);
-      if (!items.length) return;
-      const at = items.indexOf(document.activeElement), next = at < 0 ? 0 : Math.min(items.length - 1, Math.max(0, at + (key === 'arrowdown' || key === 'arrowright' ? 1 : -1)));
-      e.preventDefault(); items[next].focus(); SFX.tick();
+      e.preventDefault(); walk(key === 'arrowdown' || key === 'arrowright' ? 1 : -1);
     } else if (sheetOpen) return;
-    else if (['1','2','3'].includes(key)){ const to = ORDER[+key - 1]; if (to === current) SFX.tick(); else go(to); }
-    else if ((key === 'l' && !wasTyping) || key === '[') shift(-1);
-    else if (key === 'r' || key === ']') shift(1);
-    else if (key === 'y') openSettings();
-    else if (key === 'escape' && current === 'quest'){ SFX.back(); go('today'); }
+    else if (['1','2','3'].includes(key)){ const to = ORDER[+key - 1]; if (to === current) SFX.tick(); else { keyed(); go(to); } }
+    else if ((key === 'l' && !wasTyping) || key === '['){ keyed(); shift(-1); }
+    else if (key === 'r' || key === ']'){ keyed(); shift(1); }
+    else if (key === 'y'){ SFX.click(); openSettings(); }
+    else if (key === 'escape' && current === 'quest') go('today');
   });
   const KEYS = { a:'a', b:'b', x:'x', y:'y', l:'l', r:'r', up:'ArrowUp', down:'ArrowDown', left:'ArrowLeft', right:'ArrowRight' };
   startPad(act => {
     if (act === 'start'){ if (!$('actionBar').hidden && !document.querySelector('dialog[open]')) $('newBlock').click(); return; }
     const f = document.activeElement; // the same handlers as the keyboard; a text field would swallow the key, so it goes past it
+    if (act === 'b' && isTextEntry(f) && !document.querySelector('dialog[open]')) return f.dispatchEvent(new KeyboardEvent('keydown', { key:'Escape', bubbles:true, cancelable:true }));
     (!f || isTextEntry(f) ? document.body : f).dispatchEvent(new KeyboardEvent('keydown', { key:KEYS[act], bubbles:true, cancelable:true }));
   });
   $('loginForm').addEventListener('submit', async e => {
@@ -164,12 +169,12 @@ async function checkUpdate(){
   setMuted(localStorage.getItem('recall.muted') === '1'); setVolume(+(localStorage.getItem('recall.volume') ?? 6)); // before boot: the store isn't open yet
   initBrand(); boot(loadSounds()); wire(); initCursor();
   $('loading').innerHTML = loadingBlock('Opening RECALL.');
-  setInterval(() => document.querySelectorAll('[data-pct]').forEach(e => { e.textContent = sync.pullPct(); }), 1000);
+  setInterval(() => document.querySelectorAll('[data-pct]').forEach(e => { const p = sync.pullPct(); e.textContent = p; e.parentElement.hidden = !p; }), 1000); // a wait on the analytics worker has no percent to give
   const demo = new URLSearchParams(location.search).has('demo');
   await store.open(demo);
   if (demo) seedDemo();
   const mute = () => { const m = store.pref('sound_muted', '0') === '1', v = store.pref('sound_volume', '6'); setMuted(m); setVolume(+v); setDogSounds(store.pref('dog_sounds', '1') !== '0'); localStorage.setItem('recall.muted', m ? '1' : '0'); localStorage.setItem('recall.volume', v); };
-  mute(); store.on(mute);
+  mute(); store.on(mute); applyMotion();
   sync.onStatus(syncPill);
   store.on(() => syncPill(sync.getStatus()));
   const known = !!store.ctx.workspaceId;

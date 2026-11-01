@@ -14,17 +14,17 @@
   --chev:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Cpath fill='%2316181D' d='M0 2h1v1h1v1h1v1h2V4h1V3h1V2h1v2H7v1H6v1H5v1H3V6H2V5H1V4H0z'/%3E%3C/svg%3E"); --chart:var(--soft); --info:var(--muted); --on-danger:#FFFFFF; --scrim:rgba(22,24,29,.5);
   --f-pixel:'Silkscreen', ui-monospace, monospace;  /* 8, 16, 24, 32, 64 px only */
   --f-ui:'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; /* 400, 600 */
-  --ease:cubic-bezier(.2,.8,.2,1); --ease-spring:cubic-bezier(.34,1.56,.64,1); --t-fast:100ms; --t-mid:200ms; --t-slow:300ms; --t-cursor:240ms;
+  --hover-lift:1.25; --ease:cubic-bezier(.2,.8,.2,1); --ease-spring:cubic-bezier(.34,1.56,.64,1); --t-fast:100ms; --t-mid:200ms; --t-slow:300ms; --t-cursor:240ms;
   color-scheme:light;
 }
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
   --paper:#121418; --raised:#1A1D22; --sunken:#0E1013; --grid:#1B1E24; --frame:#2E333B;
   --chev:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Cpath fill='%23F4F5F7' d='M0 2h1v1h1v1h1v1h2V4h1V3h1V2h1v2H7v1H6v1H5v1H3V6H2V5H1V4H0z'/%3E%3C/svg%3E"); --ink:#F4F5F7; --soft:#C3C8D0; --muted:#9EA5B0; --on-ink:#16181D; --faint:#5B6270;
-  --shell-deep:var(--shell); --tan:#E8A96B; --blue:#7AA7F2; --sel-soft:#1D2A40; --danger:#F08A84; --success:#6CC28F; --warning:#E9B65A; --success-soft:#17301F; --warning-soft:#33290F; --danger-soft:#3A1C1B; --border-strong:#8A919C; --on-danger:#16181D; color-scheme:dark; }}
+  --shell-deep:var(--shell); --tan:#E8A96B; --blue:#7AA7F2; --sel-soft:#1D2A40; --danger:#F08A84; --success:#6CC28F; --warning:#E9B65A; --success-soft:#17301F; --warning-soft:#33290F; --danger-soft:#3A1C1B; --border-strong:#8A919C; --on-danger:#16181D; --hover-lift:.88; color-scheme:dark; }}
 :root[data-theme="dark"]{
   --paper:#121418; --raised:#1A1D22; --sunken:#0E1013; --grid:#1B1E24; --frame:#2E333B;
   --chev:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Cpath fill='%23F4F5F7' d='M0 2h1v1h1v1h1v1h2V4h1V3h1V2h1v2H7v1H6v1H5v1H3V6H2V5H1V4H0z'/%3E%3C/svg%3E"); --ink:#F4F5F7; --soft:#C3C8D0; --muted:#9EA5B0; --on-ink:#16181D; --faint:#5B6270;
-  --shell-deep:var(--shell); --tan:#E8A96B; --blue:#7AA7F2; --sel-soft:#1D2A40; --danger:#F08A84; --success:#6CC28F; --warning:#E9B65A; --success-soft:#17301F; --warning-soft:#33290F; --danger-soft:#3A1C1B; --border-strong:#8A919C; --on-danger:#16181D; color-scheme:dark; }
+  --shell-deep:var(--shell); --tan:#E8A96B; --blue:#7AA7F2; --sel-soft:#1D2A40; --danger:#F08A84; --success:#6CC28F; --warning:#E9B65A; --success-soft:#17301F; --warning-soft:#33290F; --danger-soft:#3A1C1B; --border-strong:#8A919C; --on-danger:#16181D; --hover-lift:.88; color-scheme:dark; }
 
 *{box-sizing:border-box}
 html,body{margin:0; height:100%; background:var(--paper); overflow:hidden}
@@ -49,6 +49,7 @@ svg.px{display:block; shape-rendering:crispEdges}
 .head .in > *{flex:none}
 .head .in > .spacer{flex:1}
 .head .appname{font-size:32px; line-height:1; margin-right:12px}
+.dogbtn:hover{background:var(--head-hover)}
 .dogbtn{display:flex; align-items:center; justify-content:center; min-width:44px; min-height:44px; margin:0 -2px; padding:0; background:none; border:0; border-radius:2px; cursor:pointer}
 #dog{overflow:visible} .hemote{animation:bemotepop .2s steps(1,end)}
 .head .btn{background:transparent; color:var(--head-ink); border-color:var(--head-ink); box-shadow:0 2px 0 var(--head-ink)}
@@ -68,16 +69,16 @@ svg.px{display:block; shape-rendering:crispEdges}
 .keybtn:hover{background:var(--head-hover)}
 .key{width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; border-radius:4px; background:var(--head-ink); color:var(--head-on); font-family:var(--f-pixel); font-size:16px; -webkit-font-smoothing:none; transition:transform .16s var(--ease-spring)}
 .keybtn:active .key{transform:translateY(2px) scale(.97,.94); transition-duration:.08s}
-.syncpill{min-height:44px; padding:0 8px; border:0; background:transparent; color:var(--head-ink); font:inherit; font-size:12px; cursor:pointer; display:flex; align-items:center; gap:8px}
+.syncpill{min-height:44px; min-width:44px; justify-content:center; padding:0 8px; border:0; background:transparent; color:var(--head-ink); font:inherit; font-size:12px; cursor:pointer; display:flex; align-items:center; gap:8px}
 .syncpill svg{flex:none} .syncpill.busy svg{animation:turn .8s steps(4,end) infinite}
 .syncpill:hover{text-decoration:underline}
 /* The minimum window is 800 wide: the sync label goes first, then the tabs take their own row. */
 @media (max-width:1040px){ .syncpill:not(.bad):not(.off) #syncText{display:none} .head .in{gap:8px} .head .appname{margin-right:0} }
-.head .in > .syncpill{flex:0 1 auto; min-width:0} #syncText{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.head .in > .syncpill{flex:0 1 auto} #syncText{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 @media (min-width:601px) and (max-width:760px){ .head .in{flex-wrap:wrap; row-gap:0; padding-bottom:8px} .keybtn,.tabs{order:5} }
 @keyframes turn{to{transform:rotate(360deg)}}
 /* Every press moves. Buttons with a drop have their own rule. */
-.tab,.subtab,.seg button,.menu button,.tick,.q-rail,.mday,.mchip,.mmore{transition:transform .16s var(--ease-spring)}
+.tab,.subtab,.seg button,.menu button,.tick,.q-rail,.q-toggle,.toggle,.syncpill,.dogbtn,.mday,.mchip,.mmore{transition:transform .16s var(--ease-spring)}
 .tab,.subtab{transition:transform .16s var(--ease-spring), color .1s steps(1,end)}
 /* Selection brackets: a popover so they sit above sheets and are never clipped by a scroller */
 .cursor{position:fixed; inset:0 auto auto 0; margin:0; padding:0; border:0; background:none; overflow:visible; pointer-events:none; transition:transform var(--t-cursor) var(--ease-spring)}
@@ -91,7 +92,7 @@ svg.px{display:block; shape-rendering:crispEdges}
 .cursor .in i:nth-child(4){right:-8px; bottom:-8px; border-left:0; border-top:0}
 @keyframes breathe{0%{transform:scale(1)}100%{transform:scale(1.06)}}
 @keyframes squash{0%{transform:scale(1.14,.86)}55%{transform:scale(.95,1.05)}100%{transform:scale(1)}}
-.tab:active,.subtab:active,.seg button:active,.menu button:active,.tick:active,.q-rail:active,.mday:active,.mchip:active,.mmore:active{transform:translateY(1px) scale(.97); transition-duration:.08s}
+.tab:active,.subtab:active,.seg button:active,.menu button:active,.tick:active,.q-rail:active,.q-toggle:active,.toggle:active,.syncpill:active,.dogbtn:active,.mday:active,.mchip:active,.mmore:active{transform:translateY(1px) scale(.97); transition-duration:.08s}
 .q-rail:hover{border-color:var(--ink)}
 
 /* Views stay mounted. Switching only flips hidden, so a tab change costs one frame. */
@@ -110,7 +111,7 @@ svg.px{display:block; shape-rendering:crispEdges}
 .btn.ghost{background:transparent; border-color:transparent; box-shadow:none; padding:0 12px}
 .btn.ghost:hover{background:var(--sunken)}
 .btn.danger{background:var(--danger); color:var(--on-danger); border-color:var(--danger); box-shadow:0 2px 0 var(--border-strong)}
-.btn.primary:hover,.btn.danger:hover{filter:brightness(1.25)}
+.btn.primary:hover,.btn.danger:hover{filter:brightness(var(--hover-lift))}
 .danger-text,.btn.danger-text{color:var(--danger)}
 .btn.icon{width:44px; padding:0; justify-content:center}
 .btn[disabled]{opacity:1; background:var(--sunken); color:var(--muted); border-color:var(--frame); box-shadow:none; cursor:not-allowed; filter:none; transform:none}
@@ -132,7 +133,9 @@ label.field :is(input,select,textarea){font-size:14px; font-weight:400}
 .toggle{display:inline-flex; align-items:center; gap:12px; min-height:44px; padding:0; background:none; border:0; color:var(--ink); font:inherit; cursor:pointer}
 .toggle .track{width:44px; height:24px; padding:2px; border-radius:4px; background:var(--frame); display:flex; flex:none; transition:background-color var(--t-fast) var(--ease)}
 .toggle .knob{width:20px; height:20px; border-radius:2px; background:var(--raised); transition:transform .18s cubic-bezier(.34,1.8,.64,1), background-color .1s steps(1,end)}
+.toggle:hover .track{background:var(--faint)}
 .toggle[aria-checked="true"] .track{background:var(--ink)}
+.toggle[aria-checked="true"]:hover .track{background:var(--soft)}
 .toggle[aria-checked="true"] .knob{transform:translateX(20px); background:var(--tan)}
 .detent-ctl{display:flex; flex-direction:column; gap:4px; width:220px; max-width:100%}
 .detent-ctl input{min-height:44px; margin:0; padding:0; border:0; background:none; accent-color:var(--ink); cursor:pointer}
@@ -151,8 +154,8 @@ label.field :is(input,select,textarea){font-size:14px; font-weight:400}
 
 .state{display:flex; flex-direction:column; align-items:center; text-align:center; gap:10px; padding:32px 16px; color:var(--muted)}
 .state b{font-family:var(--f-pixel); font-weight:400; font-size:16px; color:var(--ink); -webkit-font-smoothing:none}
-.state.loading{animation:wait .4s}
-.late{display:flex; align-items:center; gap:12px; animation:wait 10s}
+.state.loading{animation:wait .4s!important}
+.state .late{display:flex; align-items:center; gap:12px; animation:wait 10s!important} /* delays, not motion, so they outlast motion off */
 @keyframes wait{from,to{visibility:hidden}}
 .launchbar{--lb-on:var(--shell); --lb-off:var(--grid); display:grid; grid-template-columns:repeat(10,12px); gap:4px}
 .launchbar i{display:block; height:10px; background:var(--lb-off); animation:lb 1s steps(1,end) infinite; animation-delay:calc(var(--i) * .1s)}
@@ -160,11 +163,11 @@ label.field :is(input,select,textarea){font-size:14px; font-weight:400}
 /* After boot the shell holds until the app is ready */
 #loading{background:var(--shell)} #loading .state,#loading .state b,#loading .btn{color:var(--head-ink)} #loading .launchbar{--lb-on:var(--head-ink); --lb-off:rgba(22,24,29,.18)} #loading .btn:hover{background:var(--head-hover)}
 
-.toast{position:fixed; inset:auto auto 72px 50%; margin:0; border:0; transform:translate(-50%,160px); background:var(--ink); color:var(--on-ink); padding:10px 14px; border-radius:6px; transition:transform .24s var(--ease-spring); max-width:calc(100% - 32px); display:flex; gap:12px; align-items:center}
-.toast:empty{visibility:hidden} .toast.show{transform:translate(-50%,0)}
-.toast button{font:inherit; color:inherit; background:none; border:0; text-decoration:underline; min-height:44px; min-width:44px; cursor:pointer}
+.toast{--at:72px; position:fixed; inset:auto 16px var(--at) 16px; margin:0 auto; width:fit-content; max-width:min(640px,calc(100% - 32px)); border:0; transform:translateY(calc(100% + var(--at) + 8px)); background:var(--ink); color:var(--on-ink); padding:10px 14px; border-radius:6px; transition:transform .24s var(--ease-spring); display:flex; gap:12px; align-items:center}
+.toast:empty{visibility:hidden} .toast.show{transform:none}
+.toast button{flex:none; white-space:nowrap; font:inherit; color:inherit; background:none; border:0; text-decoration:underline; min-height:44px; min-width:44px; cursor:pointer}
 
-dialog{border:1px solid var(--frame); border-radius:6px; background:var(--raised); color:var(--ink); padding:20px; max-width:min(420px,calc(100% - 32px)); width:100%; max-height:calc(100% - 32px); box-shadow:0 2px 0 var(--frame)}
+dialog{scroll-padding-bottom:88px; border:1px solid var(--frame); border-radius:6px; background:var(--raised); color:var(--ink); padding:20px; max-width:min(420px,calc(100% - 32px)); width:100%; max-height:calc(100% - 32px); box-shadow:0 2px 0 var(--frame)}
 dialog.work{max-width:min(560px,calc(100% - 32px))}
 dialog.wide{max-width:min(960px,calc(100% - 32px))}
 #about{padding:24px}
@@ -198,10 +201,9 @@ dialog .sheet-actions{position:sticky; bottom:-20px; z-index:1; margin:16px -20p
 .boot.wiping .bw.ghost,.boot.done .bw.ghost{visibility:hidden}
 .boot .bemote{opacity:0} .boot .bemote.show{opacity:1; animation:bemotepop .2s steps(1,end)}
 @keyframes bemotepop{0%{transform:translateY(2px)} 33%{transform:translateY(0)} 66%{transform:translateY(-1px)} 100%{transform:none}}
-.boot.wiping::before,.boot.wiping .wipe{animation:bootwipe .17s steps(10,end) forwards}
-.boot .wipe{transform:scaleY(0); transform-box:fill-box; transform-origin:50% 100%}
+.boot.wiping::before{animation:bootwipe .17s steps(10,end) forwards}
 @keyframes bootwipe{from{transform:scaleY(0)} to{transform:scaleY(1)}}
-.boot.done .bw{animation:none; transform:none} .boot.done::before,.boot.done .wipe{animation:none; transform:none}
+.boot.done .bw{animation:none; transform:none} .boot.done::before{animation:none; transform:none}
 .boot .bname{position:absolute; left:0; right:0; top:80%; text-align:center; opacity:0; font-size:24px; color:var(--head-ink)} .boot.named .bname{opacity:1}
 
 /* Easter egg */
@@ -228,5 +230,5 @@ dialog .sheet-actions{position:sticky; bottom:-20px; z-index:1; margin:16px -20p
   .view{padding:12px 12px 76px}
   .actionbar{display:contents} .actionbar>:not(#newBlock){display:none} /* no second bar above the tabs */
   #newBlock{position:fixed; right:12px; bottom:calc(72px + env(safe-area-inset-bottom,0px)); z-index:25}
-  .toast{bottom:calc(148px + env(safe-area-inset-bottom,0px)); transform:translate(-50%,260px)} /* clears New block and the tabs, and still rests off screen */
+  .toast{--at:calc(148px + env(safe-area-inset-bottom,0px))} /* clears New block and the tabs */
 }

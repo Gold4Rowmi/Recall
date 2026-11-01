@@ -50,7 +50,8 @@
 .bar{position:relative; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; min-width:0}
 .bar i{display:block; width:100%; max-width:56px; background:var(--chart); border-radius:4px 4px 0 0}
 .peak{color:var(--muted); line-height:1; position:relative; order:-1; margin-bottom:4px; height:0; overflow:visible; transform:translateY(-14px)}
-.bar .tip{position:absolute; bottom:calc(100% - 28px); left:50%; transform:translateX(-50%); background:var(--ink); color:var(--on-ink); font-size:12px; padding:4px 8px; border-radius:4px; white-space:nowrap; visibility:hidden; z-index:2}
-.bar:hover .tip,.bar:focus-visible .tip{visibility:visible}
+.bar .tip{position:absolute; bottom:calc(100% - 28px); left:50%; transform:translateX(-50%); background:var(--ink); color:var(--on-ink); font-size:12px; padding:4px 8px; border-radius:4px; white-space:nowrap; display:none; z-index:2}
+.bar:hover .tip,.bar:focus-visible .tip{display:block}
+.bar:nth-child(-n+2) .tip{left:0; transform:none} .bar:nth-last-child(-n+2) .tip{left:auto; right:0; transform:none} /* a tip can't run off the page */
 .baraxis{display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:16px; text-align:center; margin-top:4px}
 .coach{margin:0; padding-left:24px; display:grid; gap:8px}

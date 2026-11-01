@@ -10,8 +10,7 @@ import { today, mondayOf, addDays } from '../time.js';
 const COLORS = ['#5F6B7A', '#4E9F6C', '#B77AD9', '#D98B5F', '#C85F72', '#5B9AA0', '#997A5B']; // person colours are user data, not UI tokens
 const set = (fn, v) => localStorage.setItem(fn, v);
 const applyTheme = t => { if (t === 'system') delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = t; };
-const applyMotion = () => { document.documentElement.dataset.motion = store.pref('ui_motion_enabled', '1') === '0' ? 'off' : 'on'; };
-applyTheme(localStorage.getItem('recall.theme') || 'system');
+export const applyMotion = () => { const m = store.pref('ui_motion_enabled', '1') === '0' ? 'off' : 'on'; document.documentElement.dataset.motion = m; localStorage.setItem('recall.motion', m); }; // js/prefs.js reads it back before the store opens
 store.on(set => { if (set.has('app_preferences')) applyMotion(); });
 
 export const people = () => store.all('workspace_people').filter(p => p.active !== false).sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)));
@@ -69,7 +68,7 @@ export function openSettings(){
     const theme = localStorage.getItem('recall.theme') || 'system', muted = store.pref('sound_muted', '0') === '1', volume = +store.pref('sound_volume', '6'), motion = store.pref('ui_motion_enabled', '1') !== '0';
     const brk = store.pref('break_reminders_enabled', '1') !== '0', minute = +store.pref('break_reminder_minute', 780), hhmm = `${String(Math.floor(minute / 60)).padStart(2, '0')}:${String(minute % 60).padStart(2, '0')}`;
     b.innerHTML = `<div class="settings">
-      <label class="field">Theme<select data-theme-pick><option value="system">Match Windows</option><option value="light">Light</option><option value="dark">Dark</option></select></label>
+      <label class="field">Theme<select data-theme-pick><option value="system">${window.__TAURI__ ? 'Match Windows' : 'Match this device'}</option><option value="light">Light</option><option value="dark">Dark</option></select></label>
       ${toggle('Sound', !muted, 'data-sound')}
       <div class="detent-ctl"><label class="field">Volume<input type="range" min="0" max="10" step="1" value="${volume}" data-volume></label><div class="ticks" aria-hidden="true">${Array.from({ length:11 }, (_, i) => `<i class="${i <= volume ? 'on' : ''}"></i>`).join('')}</div></div>
       ${toggle('Dog sounds', store.pref('dog_sounds', '1') !== '0', 'data-dogs')}
@@ -92,7 +91,7 @@ export function openSettings(){
     $('[data-dogs]').onclick = e => { const on = isOn(e.currentTarget); store.setPref('dog_sounds', on ? '1' : '0'); setDogSounds(on); };
     $('[data-motion]').onclick = e => store.setPref('ui_motion_enabled', isOn(e.currentTarget) ? '1' : '0');
     $('[data-break]').onclick = e => store.setPref('break_reminders_enabled', isOn(e.currentTarget) ? '1' : '0');
-    $('[data-about]').onclick = () => { close(); document.getElementById('about').showModal(); };
+    $('[data-about]').onclick = () => { close(true); document.getElementById('about').showModal(); };
     $('[data-break-at]').onchange = e => { const [h, m] = e.target.value.split(':').map(Number); if (!isNaN(h)) store.setPref('break_reminder_minute', String(h * 60 + m)); };
     $('[data-capacity]').onchange = e => store.setPref('team_capacity_hours', e.target.value);
     $('[data-close]').onclick = () => close();

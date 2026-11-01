@@ -43,12 +43,14 @@ let ac = null, master = null, muted = false, volume = 6, dogSounds = true, queue
 export const setMuted = v => { muted = v; };
 export const setVolume = n => { volume = n; if (master) master.gain.value = n / 10; };
 export const setDogSounds = v => { dogSounds = v; };
+// The context waits for the first press where a page can't play yet: making one at load only earns a console warning.
+const mayAudio = () => ac || window.__TAURI__ || navigator.userActivation?.hasBeenActive !== false;
 function audio(){ if (!ac){ try { ac = new (window.AudioContext || window.webkitAudioContext)(); master = ac.createGain(); master.gain.value = volume / 10; master.connect(ac.destination); } catch(e){} } if (ac?.state === 'suspended') ac.resume(); return ac; }
 // Decoded on an offline context, which needs no gesture, so the first press already has its sound.
 export function loadSounds(){ const off = new OfflineAudioContext(1, 1, 44100);
   return Promise.all(NAMES.map(async n => { try { buffers[n] = await off.decodeAudioData(await (await fetch(`vendor/sounds/${n}.wav`)).arrayBuffer()); } catch(e){ console.warn('sound not loaded', n, e); } })); }
 // Not ready means silent, never late. A suspended context with no gesture would save every sound up for the first press.
-function play(n, at = 0){ queued = null; if (muted || !buffers[n]) return; const c = audio(); if (!c || (c.state !== 'running' && !navigator.userActivation?.isActive)) return;
+function play(n, at = 0){ queued = null; if (muted || !buffers[n] || !mayAudio()) return; const c = audio(); if (!c || (c.state !== 'running' && !navigator.userActivation?.isActive)) return;
   const s = c.createBufferSource(); s.buffer = buffers[n]; s.connect(master); s.start(c.currentTime + at); }
 // Seasoning: one per action, and never twice within 2 s.
 const bark = (n, at) => { const now = Date.now(); if (!dogSounds || now - lastDog < 2000) return; lastDog = now; play(n, at); };
@@ -70,26 +72,28 @@ export const SFX = {
   woof:    () => bark('woof'), yip: () => bark('yip'), sniff: () => bark('sniff'), whine: () => bark('whine'), grr: () => bark('grr'), awoo: () => bark('awoo')
 };
 // Every press answers: one pair of capture listeners, so no button can be missed.
-const PRESS = 'button, [role="button"], label.btn, a.btn, .col', OWN_SOUND = '.tab,.subtab,.keybtn,.dogbtn'; // those answer with a swish, a buzz or a woof
+const PRESS = 'button, [role="button"], label.btn, a.btn, .col', OWN_SOUND = '.tab,.subtab,.keybtn,.dogbtn,.q-rail'; // those answer with a swish, a buzz or a woof
 document.addEventListener('pointerdown', e => { const b = e.target.closest(PRESS); if (b && !b.disabled && !b.closest('#boot') && !b.matches(`${OWN_SOUND},.primary,.toggle,[data-sfx]`)) SFX.click(); }, true);
 document.addEventListener('click', e => { const b = e.target.closest(PRESS); if (!b || b.closest('#boot') || b.matches(OWN_SOUND)) return;
-  if (b.matches('.toggle')) return SFX[b.getAttribute('aria-checked') === 'true' ? 'off' : 'on']();
+  if (b.matches('.toggle')) return void (b.getAttribute('aria-checked') === 'true' ? SFX.off() : setTimeout(SFX.on)); // after the handlers, or turning Sound on is silent; off plays before it mutes
   const n = b.classList.contains('primary') ? 'confirm' : b.dataset.sfx || (b.closest('dialog') && /^(cancel|close)$/i.test(b.textContent.trim()) ? 'back' : e.detail ? null : 'click'); // a key press has no pointerdown
   if (n){ queued = n; setTimeout(() => { if (queued){ const q = queued; queued = null; SFX[q](); } }); } }, true); // waits for the handlers: a richer sound from one of them replaces it
 // Selects, colours and dates answer when they change; text fields would tick on every blur, and a slider has its detents.
 document.addEventListener('change', e => { if (!e.target.matches('textarea, input:not([type]), input[type="text"], input[type="email"], input[type="password"], input[type="range"]')) SFX.tick(); }, true);
 
 let toastT;
+// Emptied once it's out of sight, so nothing in it can be tabbed to.
+const hide = () => { const t = $('toast'); t.classList.remove('show'); clearTimeout(toastT); toastT = setTimeout(() => { t.textContent = ''; }, 300); };
 // action = { label, run }: an inline undo instead of a confirm dialog for reversible work.
 export function toast(msg, kind, action){ const t = $('toast'); t.textContent = msg;
-  if (action){ const b = document.createElement('button'); b.type = 'button'; b.textContent = action.label; b.onclick = () => { t.classList.remove('show'); action.run(); }; t.appendChild(b); }
+  if (action){ const b = document.createElement('button'); b.type = 'button'; b.textContent = action.label; b.onclick = () => { hide(); b.remove(); action.run(); }; t.appendChild(b); }
   t.classList.remove('show'); t.hidePopover?.(); t.showPopover?.(); void t.offsetWidth; // re-entering the top layer puts it above any open sheet
-  t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), action ? 6000 : 2400);
+  t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(hide, action ? 6000 : 2400);
   if (kind === 'error'){ react('sad', 900); SFX.error(); } else if (kind === 'success') celebrate(); else if (kind === 'big') celebrate(true); else if (kind === 'new'){ react('alert', 700, EMOTE); SFX.news(); } }
 
 /* Boot: once per launch, skippable after 300 ms, ends on the logo */
 export function boot(sounds){
-  const el = $('boot'), timers = [], t0 = Date.now(), reduce = matchMedia('(prefers-reduced-motion: reduce)').matches, dk = isDark(); let done = false;
+  const el = $('boot'), timers = [], t0 = Date.now(), reduce = calm(), dk = isDark(); let done = false;
   // Before the wipe he sits on the theme's ground, so a dark ground gets the outline and a Paper word. The shell is light.
   $('bootDog').innerHTML = dog('sleepy', 0, 0, dk); $('bootWord').innerHTML = $('bootWordGhost').innerHTML = word(dk ? '#F4F5F7' : '#16181D', 12, 4);
   el.querySelector('.bootbox').style.width = Math.min(10, Math.floor(innerWidth * .92 / 64)) * 64 + 'px'; // one dot is a whole number of pixels
@@ -98,12 +102,12 @@ export function boot(sounds){
   const onKey = e => { e.stopImmediatePropagation(); skip(); }; // a key during boot skips it and is not a shortcut
   const finish = () => { if (done) return; done = true; timers.forEach(clearTimeout); removeEventListener('keydown', onKey, true); el.remove(); };
   el.addEventListener('click', skip); addEventListener('keydown', onKey, true);
-  if (audio() && ac.state === 'running') sounds.then(() => { if (Date.now() - t0 < 200) SFX.startup(); }); // past that it would miss the picture; browsers only allow it after a press
+  if (mayAudio() && audio() && ac.state === 'running') sounds.then(() => { if (Date.now() - t0 < 200) SFX.startup(); }); // past that it would miss the picture; browsers only allow it after a press
   const onShell = () => { $('bootWord').innerHTML = word('#16181D', 12, 4); };
   if (reduce){ el.classList.add('done','named'); $('bootDog').innerHTML = dog('idle'); onShell(); at(800, finish); return; }
   el.classList.add('booting');
   at(510, () => { $('bootDog').innerHTML = dog('alert', 0, 0, dk); $('bootEmote').classList.add('show'); el.classList.add('wiping'); });
-  at(680, () => { $('bootDog').innerHTML = dog('alert'); onShell(); }); // the shell has risen behind them by now
+  at(595, () => { $('bootDog').innerHTML = dog('alert'); onShell(); }); // halfway: the rising shell has reached them
   at(800, () => { $('bootDog').innerHTML = dog('idle'); $('bootEmote').classList.remove('show'); });
   at(900, () => el.classList.add('named'));
   at(1100, finish);
@@ -126,10 +130,10 @@ export function bubbles(){
   const face = p => { ds.innerHTML = dog(p, 0, 0, dk); };
   face('grin'); stage.appendChild(ds); document.body.appendChild(layer); document.body.appendChild(stage);
   void stage.offsetWidth; stage.classList.add('in'); SFX.yip(); toast('Bubbles. He loved these.');
-  let list = [], spawnAt = 0, caught = 0, left = false; const t0 = Date.now();
+  let list = [], spawnAt = 0, caught = 0, left = false; const t0 = Date.now(), quiet = calm(); // with motion off he visits, and no bubbles rise
   const tick = setInterval(() => {
     const now = Date.now(), el = now - t0, W = innerWidth, H = innerHeight, r = ds.getBoundingClientRect(), m = { x: r.left + r.width / 2, y: r.top + r.height * 0.75, r: r.width / 2 };
-    if (el < 6500 && now >= spawnAt){
+    if (!quiet && el < 6500 && now >= spawnAt){
       spawnAt = now + 260 + Math.random() * 340;
       const size = [16, 24, 32][Math.floor(Math.random() * 3)], px = size / 8;
       const b = { el: bubbleSvg(size), size, px, x: Math.round((W * 0.3 + Math.random() * W * 0.66) / px) * px, y: Math.round(H / px) * px + size, drift: Math.random() < .5 ? -1 : 1, n: 0 };
@@ -149,9 +153,9 @@ export function bubbles(){
       if (b.dead || b.y < -b.size){ b.el.remove(); b.gone = true; }
     });
     list = list.filter(b => !b.gone);
-    if (el > 9000 && !left){
+    if (el > (quiet ? 3000 : 9000) && !left){
       left = true; stage.classList.remove('in'); stage.classList.add('out'); SFX.woof();
-      toast(caught ? 'He got ' + caught + (caught === 1 ? ' bubble.' : ' bubbles.') + ' Good boy.' : 'He missed every one. He never minded.');
+      if (!quiet) toast(caught ? 'He got ' + caught + (caught === 1 ? ' bubble.' : ' bubbles.') + ' Good boy.' : 'He missed every one. He never minded.');
       setTimeout(() => stage.remove(), 300);
     }
     if (left && !list.length){ clearInterval(tick); layer.remove(); BUB = false; }

@@ -30,4 +30,5 @@
 .q-rail-top .pixel{font-size:16px}
 .q-railscreen{display:flex; justify-content:center; overflow:hidden; background:var(--sunken); border:1px solid var(--frame)}
 .q-toggle{min-height:44px; min-width:44px; padding:0; border:0; background:none; color:var(--muted); font-family:inherit; cursor:pointer; text-decoration:underline}
+.q-toggle:hover{color:var(--ink)}
 @media (max-width:980px){.q-grid{grid-template-columns:1fr}}

@@ -19,7 +19,7 @@ export function stateBlock(pose, title, text, action = ''){
   return `<div class="state"><svg class="px" width="60" height="60" viewBox="0 0 10 10" data-pose="${pose}" aria-hidden="true"></svg><b>${esc(title)}</b><span>${esc(text)}</span>${action}</div>`;
 }
 // Shows after 400 ms; past 10 s it adds a percent and a Cancel, both timed in CSS.
-export const loadingBlock = text => `<div class="state loading">${launchbar()}<span>${esc(text)}</span><span class="late"><span><span data-pct>0</span>% done</span>${backBtn('Cancel', 'data-cancel-load')}</span></div>`;
+export const loadingBlock = text => `<div class="state loading">${launchbar()}<span>${esc(text)}</span><span class="late"><span hidden><span data-pct>0</span>% done</span>${backBtn('Cancel', 'data-cancel-load')}</span></div>`;
 document.addEventListener('click', e => { const s = e.target.closest('[data-cancel-load]')?.closest('.state'); if (s){ s.classList.remove('loading'); s.innerHTML = '<b>Stopped waiting</b><span>Your work is safe. It shows up here once it arrives.</span>'; } });
 export const toggle = (label, on, attrs = '') => `<button class="toggle" type="button" role="switch" aria-checked="${!!on}" ${attrs}><span class="track"><span class="knob"></span></span>${esc(label)}</button>`;
 export const isOn = el => el.getAttribute('aria-checked') === 'true';
@@ -30,15 +30,17 @@ export function fieldErr(input, msg){
   const f = input.closest('.field'), h = document.createElement('span');
   f.querySelector('[id^="err-"]')?.remove(); f.classList.add('err');
   h.className = 'help'; h.id = 'err-' + ++errs; h.textContent = msg; f.appendChild(h);
-  bonk(input); input.setAttribute('aria-invalid', 'true'); input.setAttribute('aria-describedby', h.id); input.focus();
-  input.addEventListener('input', () => { f.classList.remove('err'); input.removeAttribute('aria-invalid'); input.removeAttribute('aria-describedby'); h.remove(); }, { once:true });
+  bonk(input); input.setAttribute('aria-invalid', 'true'); input.setAttribute('aria-describedby', h.id);
+  const set = input.matches('fieldset'); (set ? input.querySelector('button') : input).focus(); // a group of switches fires no input event
+  input.addEventListener(set ? 'click' : 'input', () => { f.classList.remove('err'); input.removeAttribute('aria-invalid'); input.removeAttribute('aria-describedby'); h.remove(); }, { once:true });
 }
 // Numbers sit on tape strips, so a change can roll like a counter.
 const STRIP = Array.from({ length:10 }, (_, i) => `<span>${i}</span>`).join('');
 export const rollDigits = v => [...String(v)].map(c => /\d/.test(c) ? `<span class="dg" aria-hidden="true"><span class="strip" style="transform:translateY(-${c}em)">${STRIP}</span></span>` : `<span aria-hidden="true">${esc(c)}</span>`).join('');
 export function fillRolling(el, markup){ const was = [...el.querySelectorAll('[data-roll]')].map(m => m.dataset.roll); fill(el, markup); if (calm()) return;
+  let ticks = 0; // one detent per digit that rolled, kept to a few
   el.querySelectorAll('[data-roll]').forEach((m, i) => { if (was[i] === undefined || was[i] === m.dataset.roll) return; const to = m.dataset.roll.replace(/\D/g, ''), from = was[i].replace(/\D/g, '').padStart(to.length, '0').slice(-to.length);
-    m.querySelectorAll('.strip').forEach((s, j) => { if (from[j] !== to[j]) s.animate([{ transform:`translateY(-${from[j]}em)` }, { transform:`translateY(-${to[j]}em)` }], { duration:220, easing:'cubic-bezier(.2,.8,.2,1)' }); }); }); }
+    m.querySelectorAll('.strip').forEach((s, j) => { if (from[j] !== to[j]){ s.animate([{ transform:`translateY(-${from[j]}em)` }, { transform:`translateY(-${to[j]}em)` }], { duration:220, easing:'cubic-bezier(.2,.8,.2,1)' }); if (ticks < 3 && !document.hidden) setTimeout(SFX.detent, ticks++ * 70, 4); } }); }); }
 // Set innerHTML and paint any Rommel inside.
 export function fill(el, markup){ el.innerHTML = markup; if (markup.includes('data-pose')) paintDogs(el); }
 
