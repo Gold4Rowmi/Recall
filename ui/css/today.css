@@ -29,8 +29,8 @@
 .gutter i{position:absolute; right:8px; font-style:normal; font-size:12px; color:var(--muted); transform:translateY(1px)}
 .col{position:relative; border-left:1px solid var(--frame); cursor:cell; contain:layout style;
   background-image:linear-gradient(var(--frame) 1px,transparent 1px),linear-gradient(var(--sunken) 1px,transparent 1px); background-size:100% 48px,100% 24px}
-.nowline{position:absolute; left:0; right:0; height:2px; background:var(--danger); z-index:3; pointer-events:none}
-.nowline::before{content:""; position:absolute; left:-1px; top:-3px; width:8px; height:8px; background:var(--danger)}
+.nowline{position:absolute; left:0; right:0; height:2px; background:var(--tan); z-index:3; pointer-events:none}
+.nowline::before{content:""; position:absolute; left:-1px; top:-3px; width:8px; height:8px; background:var(--tan)}
 
 .blk{position:absolute; display:flex; align-items:flex-start; gap:4px; padding:2px 4px; overflow:hidden; cursor:grab; touch-action:none; user-select:none; z-index:1;
   background:var(--sunken); border:1px solid var(--frame); border-left:4px solid var(--c); border-radius:4px; font-size:12px; line-height:16px; will-change:transform}
@@ -38,7 +38,7 @@
 .blk.isdone{background:transparent; color:var(--muted)}
 .blk.isdone .tt{text-decoration:line-through}
 .blk.lifted{opacity:.4}
-.blk.pushed{transition:transform .12s ease-out; z-index:2}
+.blk.pushed{transition:transform .12s var(--ease); z-index:2}
 .blk .tx{min-width:0; flex:1; display:grid}
 .blk .tt{font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 .blk .tm{color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
@@ -111,7 +111,7 @@ body.dragging{cursor:grabbing; user-select:none}
 .ring{display:grid; justify-items:center; font-size:12px; color:var(--muted); text-align:center}
 .ring svg{width:64px; height:64px; transform:rotate(-90deg)}
 .ring circle{fill:none; stroke:var(--frame); stroke-width:7}
-.ring .val{stroke:var(--chart,var(--soft)); stroke-dasharray:100; stroke-dashoffset:100; transition:stroke-dashoffset .2s ease-out}
+.ring .val{stroke:var(--shell); stroke-dasharray:100; stroke-dashoffset:100; transition:stroke-dashoffset var(--t-mid) var(--ease)}
 .ring b{grid-row:1; grid-column:1; align-self:center; color:var(--ink); font-size:12px}
 .ring svg{grid-row:1; grid-column:1}
 .hbars{display:grid; grid-template-columns:repeat(11,1fr); gap:4px; height:96px}
@@ -129,8 +129,8 @@ body.dragging{cursor:grabbing; user-select:none}
 #tobs p+p{margin-top:8px}
 #tobs{font-size:12px}
 
-.drawer{position:absolute; top:0; right:0; bottom:0; width:min(420px,100%); z-index:6; display:grid; grid-template-columns:minmax(0,1fr); grid-template-rows:auto minmax(0,1fr); gap:8px; padding:12px; background:var(--raised); border:1px solid var(--frame); box-shadow:0 2px 0 var(--frame); border-radius:6px; transform:translateX(calc(100% + 16px)); visibility:hidden; transition:transform .16s ease-in,visibility .16s}
-.drawer.open{transform:none; visibility:visible; transition:transform .26s var(--spring)}
+.drawer{position:absolute; top:0; right:0; bottom:0; width:min(420px,100%); z-index:6; display:grid; grid-template-columns:minmax(0,1fr); grid-template-rows:auto minmax(0,1fr); gap:8px; padding:12px; background:var(--raised); border:1px solid var(--frame); box-shadow:0 2px 0 var(--frame); border-radius:6px; transform:translateX(calc(100% + 16px)); visibility:hidden; transition:transform .16s var(--ease),visibility .16s}
+.drawer.open{transform:none; visibility:visible; transition:transform .26s var(--ease)}
 .dhead{display:flex; align-items:center; gap:8px}
 .dbody{overflow:auto; min-height:0; padding:5px; margin:-5px; display:grid; grid-template-columns:minmax(0,1fr); align-content:start; gap:8px}
 .dbody>p{margin:0}

@@ -14,7 +14,7 @@
   --chev:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Cpath fill='%2316181D' d='M0 2h1v1h1v1h1v1h2V4h1V3h1V2h1v2H7v1H6v1H5v1H3V6H2V5H1V4H0z'/%3E%3C/svg%3E"); --chart:var(--soft); --info:var(--muted); --on-danger:#FFFFFF; --scrim:rgba(22,24,29,.5);
   --f-pixel:'Silkscreen', ui-monospace, monospace;  /* 8, 16, 24, 32, 64 px only */
   --f-ui:'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; /* 400, 600 */
-  --spring:cubic-bezier(.34,1.56,.64,1);
+  --ease:cubic-bezier(.2,.8,.2,1); --ease-spring:cubic-bezier(.34,1.56,.64,1); --t-fast:100ms; --t-mid:200ms; --t-slow:300ms; --t-cursor:240ms;
   color-scheme:light;
 }
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
@@ -40,7 +40,7 @@ b,strong{font-weight:600}
 .clip{overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0}
 svg.px{display:block; shape-rendering:crispEdges}
 :focus-visible{outline:3px solid var(--blue); outline-offset:2px}
-@media (prefers-reduced-motion:reduce){*{transition:none!important; animation:none!important} .launchbar i{background:var(--shell)!important}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important; animation:none!important} .launchbar i{background:var(--lb-on)!important}}
 ::-webkit-scrollbar{width:12px;height:12px} ::-webkit-scrollbar-thumb{background:var(--frame);border:3px solid transparent;background-clip:content-box;border-radius:6px}
 
 /* Header: the app is the hero, Rommel the signature */
@@ -49,12 +49,14 @@ svg.px{display:block; shape-rendering:crispEdges}
 .head .in > *{flex:none}
 .head .in > .spacer{flex:1}
 .head .appname{font-size:32px; line-height:1; margin-right:12px}
+.dogbtn{display:flex; align-items:center; justify-content:center; min-width:44px; min-height:44px; margin:0 -2px; padding:0; background:none; border:0; border-radius:2px; cursor:pointer}
+#dog{overflow:visible} .hemote{animation:bemotepop .2s steps(1,end)}
 .head .btn{background:transparent; color:var(--head-ink); border-color:var(--head-ink); box-shadow:0 2px 0 var(--head-ink)}
 .head .btn:not(.primary):hover{background:var(--head-hover)}
 .head :focus-visible{outline-color:var(--head-ink)} /* Cursor Blue would vanish on the blue shell */
 /* Page slide tabs, from the UI guidelines: a block springs between equal tabs. On the shell they stay black in both themes. */
 .tabs{position:relative; display:inline-grid; grid-auto-flow:column; grid-auto-columns:88px; padding:4px; background:transparent; border:1px solid var(--head-ink); border-radius:6px}
-.ind{position:absolute; top:4px; left:4px; width:calc((100% - 8px) / 3); height:calc(100% - 8px); background:var(--head-ink); border-radius:4px; transform:translateX(calc(100% * var(--i, 0))); transition:transform .26s var(--spring)}
+.ind{position:absolute; top:4px; left:4px; width:calc((100% - 8px) / 3); height:calc(100% - 8px); background:var(--head-ink); border-radius:4px; transform:translateX(calc(100% * var(--i, 0))); transition:transform .26s var(--ease-spring)}
 .tabs:not(:has([aria-selected="true"])) .ind{display:none} /* Quest sits outside the tabs */
 .tab{position:relative; min-height:44px; padding:0; border:0; border-radius:4px; background:none; color:var(--head-ink); font-family:var(--f-ui); font-size:13px; cursor:pointer}
 .tab:not([aria-selected="true"]):hover{background:var(--head-hover)}
@@ -64,7 +66,7 @@ svg.px{display:block; shape-rendering:crispEdges}
 /* L and R: 44 px target, the key is the visible part */
 .keybtn{min-width:44px; min-height:44px; padding:0; display:inline-flex; align-items:center; justify-content:center; background:none; border:0; border-radius:6px; cursor:pointer}
 .keybtn:hover{background:var(--head-hover)}
-.key{width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; border-radius:4px; background:var(--head-ink); color:var(--head-on); font-family:var(--f-pixel); font-size:16px; -webkit-font-smoothing:none; transition:transform .16s var(--spring)}
+.key{width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; border-radius:4px; background:var(--head-ink); color:var(--head-on); font-family:var(--f-pixel); font-size:16px; -webkit-font-smoothing:none; transition:transform .16s var(--ease-spring)}
 .keybtn:active .key{transform:translateY(2px) scale(.97,.94); transition-duration:.08s}
 .syncpill{min-height:44px; padding:0 8px; border:0; background:transparent; color:var(--head-ink); font:inherit; font-size:12px; cursor:pointer; display:flex; align-items:center; gap:8px}
 .syncpill svg{flex:none} .syncpill.busy svg{animation:turn .8s steps(4,end) infinite}
@@ -75,13 +77,13 @@ svg.px{display:block; shape-rendering:crispEdges}
 @media (min-width:601px) and (max-width:760px){ .head .in{flex-wrap:wrap; row-gap:0; padding-bottom:8px} .keybtn,.tabs{order:5} }
 @keyframes turn{to{transform:rotate(360deg)}}
 /* Every press moves. Buttons with a drop have their own rule. */
-.tab,.subtab,.seg button,.menu button,.tick,.q-rail,.mday,.mchip,.mmore{transition:transform .16s var(--spring)}
-.tab,.subtab{transition:transform .16s var(--spring), color .1s steps(1,end)}
+.tab,.subtab,.seg button,.menu button,.tick,.q-rail,.mday,.mchip,.mmore{transition:transform .16s var(--ease-spring)}
+.tab,.subtab{transition:transform .16s var(--ease-spring), color .1s steps(1,end)}
 /* Selection brackets: a popover so they sit above sheets and are never clipped by a scroller */
-.cursor{position:fixed; inset:0 auto auto 0; margin:0; padding:0; border:0; background:none; overflow:visible; pointer-events:none; transition:transform .24s var(--spring)}
+.cursor{position:fixed; inset:0 auto auto 0; margin:0; padding:0; border:0; background:none; overflow:visible; pointer-events:none; transition:transform var(--t-cursor) var(--ease-spring)}
 .cursor.instant{transition:none} .cursor.gone{visibility:hidden}
 .cursor .in{position:absolute; inset:0; animation:breathe 1.2s steps(2,end) infinite}
-.cursor.squash .in{animation:squash .26s cubic-bezier(.2,.8,.2,1)}
+.cursor.squash .in{animation:squash .26s var(--ease)}
 .cursor .in i{position:absolute; width:14px; height:14px; border:4px solid var(--blue)}
 .cursor .in i:nth-child(1){left:-8px; top:-8px; border-right:0; border-bottom:0}
 .cursor .in i:nth-child(2){right:-8px; top:-8px; border-left:0; border-bottom:0}
@@ -100,7 +102,8 @@ svg.px{display:block; shape-rendering:crispEdges}
 .card{background:var(--raised); border:1px solid var(--frame); box-shadow:0 2px 0 var(--frame); border-radius:6px; padding:16px; min-width:0}
 .card h2{margin:0 0 8px; font-family:var(--f-pixel); font-weight:400; font-size:16px; -webkit-font-smoothing:none}
 
-.btn{display:inline-flex; align-items:center; gap:10px; min-height:44px; padding:0 16px 0 10px; border-radius:6px; border:1px solid var(--frame); background:var(--raised); color:var(--ink); box-shadow:0 2px 0 var(--frame); font:inherit; cursor:pointer; white-space:nowrap; transition:transform .16s var(--spring), box-shadow .1s, background-color .1s ease-out}
+.btn{display:inline-flex; align-items:center; gap:10px; min-height:44px; padding:0 16px; border-radius:6px; border:1px solid var(--frame); background:var(--raised); color:var(--ink); box-shadow:0 2px 0 var(--frame); font:inherit; cursor:pointer; white-space:nowrap; transition:transform .16s var(--ease-spring), box-shadow .1s, background-color var(--t-fast) var(--ease)}
+.btn:has(.glyph){padding:0 16px 0 10px}
 .btn:hover{background:var(--sunken)}
 .btn:active{transform:translateY(2px) scale(.97,.94); box-shadow:none; transition-duration:.08s}
 .btn.primary{background:var(--ink); color:var(--on-ink); border-color:var(--ink); box-shadow:0 2px 0 var(--border-strong)}
@@ -127,10 +130,14 @@ label.field :is(input,select,textarea){font-size:14px; font-weight:400}
 .field.err .help{color:var(--danger)}
 /* Switches apply as soon as they're pressed */
 .toggle{display:inline-flex; align-items:center; gap:12px; min-height:44px; padding:0; background:none; border:0; color:var(--ink); font:inherit; cursor:pointer}
-.toggle .track{width:44px; height:24px; padding:2px; border-radius:4px; background:var(--frame); display:flex; flex:none; transition:background-color .1s ease-out}
+.toggle .track{width:44px; height:24px; padding:2px; border-radius:4px; background:var(--frame); display:flex; flex:none; transition:background-color var(--t-fast) var(--ease)}
 .toggle .knob{width:20px; height:20px; border-radius:2px; background:var(--raised); transition:transform .18s cubic-bezier(.34,1.8,.64,1), background-color .1s steps(1,end)}
 .toggle[aria-checked="true"] .track{background:var(--ink)}
 .toggle[aria-checked="true"] .knob{transform:translateX(20px); background:var(--tan)}
+.detent-ctl{display:flex; flex-direction:column; gap:4px; width:220px; max-width:100%}
+.detent-ctl input{min-height:44px; margin:0; padding:0; border:0; background:none; accent-color:var(--ink); cursor:pointer}
+.ticks{display:grid; grid-template-columns:repeat(11,minmax(0,1fr)); justify-items:center; padding:0 6px}
+.ticks i{display:block; width:3px; height:8px; background:var(--frame)} .ticks i.on{background:var(--tan)}
 .status{display:flex; align-items:flex-start; gap:10px; padding:12px 14px; border-radius:4px; font-size:13px; min-width:0}
 .status .sq{width:10px; height:10px; margin-top:5px; flex-shrink:0}
 .status.warn{background:var(--warning-soft)} .status.warn .sq{background:var(--warning)}
@@ -147,11 +154,13 @@ label.field :is(input,select,textarea){font-size:14px; font-weight:400}
 .state.loading{animation:wait .4s}
 .late{display:flex; align-items:center; gap:12px; animation:wait 10s}
 @keyframes wait{from,to{visibility:hidden}}
-.launchbar{display:grid; grid-template-columns:repeat(10,12px); gap:4px}
-.launchbar i{display:block; height:10px; background:var(--grid); animation:lb 1s steps(1,end) infinite; animation-delay:calc(var(--i) * .1s)}
-@keyframes lb{0%,50%{background:var(--shell)}51%,100%{background:var(--grid)}}
+.launchbar{--lb-on:var(--shell); --lb-off:var(--grid); display:grid; grid-template-columns:repeat(10,12px); gap:4px}
+.launchbar i{display:block; height:10px; background:var(--lb-off); animation:lb 1s steps(1,end) infinite; animation-delay:calc(var(--i) * .1s)}
+@keyframes lb{0%,50%{background:var(--lb-on)}51%,100%{background:var(--lb-off)}}
+/* After boot the shell holds until the app is ready */
+#loading{background:var(--shell)} #loading .state,#loading .state b,#loading .btn{color:var(--head-ink)} #loading .launchbar{--lb-on:var(--head-ink); --lb-off:rgba(22,24,29,.18)} #loading .btn:hover{background:var(--head-hover)}
 
-.toast{position:fixed; inset:auto auto 72px 50%; margin:0; border:0; transform:translate(-50%,160px); background:var(--ink); color:var(--on-ink); padding:10px 14px; border-radius:6px; transition:transform .24s var(--spring); max-width:calc(100% - 32px); display:flex; gap:12px; align-items:center}
+.toast{position:fixed; inset:auto auto 72px 50%; margin:0; border:0; transform:translate(-50%,160px); background:var(--ink); color:var(--on-ink); padding:10px 14px; border-radius:6px; transition:transform .24s var(--ease-spring); max-width:calc(100% - 32px); display:flex; gap:12px; align-items:center}
 .toast:empty{visibility:hidden} .toast.show{transform:translate(-50%,0)}
 .toast button{font:inherit; color:inherit; background:none; border:0; text-decoration:underline; min-height:44px; min-width:44px; cursor:pointer}
 
@@ -185,7 +194,10 @@ dialog .sheet-actions{position:sticky; bottom:-20px; z-index:1; margin:16px -20p
 .boot .bw{transform:translateY(-24px)}
 .boot.booting .bw{animation:bootdrop .39s steps(1,end) forwards}
 @keyframes bootdrop{0%{transform:translateY(-18px)} 28.2%{transform:translateY(-12px)} 56.4%{transform:translateY(-6px)} 84.6%{transform:translateY(1px)} 97%{transform:translateY(1px)} 100%{transform:translateY(0)}}
-.boot .bemote{opacity:0} .boot .bemote.show{opacity:1}
+.boot .bw.ghost{opacity:.22; animation-delay:.05s} /* the LCD holds the last frame for about three ticks */
+.boot.wiping .bw.ghost,.boot.done .bw.ghost{visibility:hidden}
+.boot .bemote{opacity:0} .boot .bemote.show{opacity:1; animation:bemotepop .2s steps(1,end)}
+@keyframes bemotepop{0%{transform:translateY(2px)} 33%{transform:translateY(0)} 66%{transform:translateY(-1px)} 100%{transform:none}}
 .boot.wiping::before,.boot.wiping .wipe{animation:bootwipe .17s steps(10,end) forwards}
 .boot .wipe{transform:scaleY(0); transform-box:fill-box; transform-origin:50% 100%}
 @keyframes bootwipe{from{transform:scaleY(0)} to{transform:scaleY(1)}}
@@ -209,7 +221,7 @@ dialog .sheet-actions{position:sticky; bottom:-20px; z-index:1; margin:16px -20p
 @media (max-width:600px){
   .head .in{min-height:56px; padding:0 8px 0 16px}
   .head .appname{font-size:24px}
-  .keybtn{display:none}
+  .keybtn,.blk .more{display:none} /* a block in a narrow column has no room for it; a tap opens the editor */
   .tabs{position:fixed; left:0; right:0; bottom:0; z-index:25; grid-auto-columns:1fr; padding-bottom:calc(4px + env(safe-area-inset-bottom,0px)); background:var(--shell); border:0; border-top:2px solid var(--head-ink); border-radius:0}
   .ind{height:44px}
   #views{margin-bottom:calc(54px + env(safe-area-inset-bottom,0px))}

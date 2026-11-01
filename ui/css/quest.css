@@ -10,13 +10,13 @@
 .q-pick{display:flex; align-items:center; gap:8px; font-size:12px; color:var(--muted)}
 .q-pick select{width:auto}
 .q-meter{height:12px; background:var(--sunken); border:1px solid var(--frame); padding:1px}
-.q-meter i{display:block; height:100%; background:var(--chart, var(--shell-deep))}
+.q-meter i{display:block; height:100%; background:var(--shell)}
 .q-meter.boss i{background:var(--danger)} .q-meter.good i{background:var(--success)} .q-meter.warn i{background:var(--warning)} .q-meter.low i{background:var(--danger)}
 .q-rank{gap:12px; margin-bottom:12px}
 .q-crest{flex:none; width:64px; display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:4px}
 .q-crest .pixel{font-size:16px; line-height:1; -webkit-font-smoothing:none}
 .q-pips{display:flex; gap:2px; justify-content:center; width:100%}
-.q-pips i{width:6px; height:4px; background:var(--grid)} .q-pips i.on{background:var(--chart, var(--shell-deep))}
+.q-pips i{width:6px; height:4px; background:var(--grid)} .q-pips i.on{background:var(--shell)}
 .q-under{display:flex; justify-content:space-between; margin-top:4px}
 .q-note{margin-bottom:8px}
 .q-goals,.q-days{list-style:none; margin:0; padding:0; display:grid; gap:4px}

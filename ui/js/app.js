@@ -1,5 +1,5 @@
 // Shell and router. Views mount once and stay mounted; switching flips `hidden` synchronously, then renders only if dirty.
-import { initBrand, boot, toast, react, setRestPose, setMuted, SFX } from './brand.js';
+import { initBrand, boot, toast, react, setRestPose, setMuted, setVolume, setDogSounds, loadSounds, bonk, SFX } from './brand.js';
 import * as store from './store.js';
 import * as sync from './sync.js';
 import { menu, closeMenu, loadingBlock, fieldErr, isTextEntry, slide, ITEMS } from './ui.js';
@@ -22,7 +22,8 @@ let current = null, frame = 0;
 function rest(){
   const v = mounted[current];
   const pose = sync.getStatus().state === 'offline' ? 'sleepy' : v?.dataset.rest;
-  setRestPose(pose || 'idle');
+  const panelDog = !!v && [...v.querySelectorAll('.state svg')].some(s => s.getClientRects().length); // one Rommel per screen
+  setRestPose(panelDog ? 'idle' : pose || 'idle');
 }
 function paint(){ frame = 0; if (dirty.has(current)){ dirty.delete(current); VIEWS[current].render(); } rest(); }
 const schedule = () => { if (!frame) frame = requestAnimationFrame(paint); };
@@ -42,7 +43,7 @@ export function go(name){
   $('tabs').style.setProperty('--i', ORDER.indexOf(name));
   VIEWS[name].onShow?.();
   paint();
-  if (from){ SFX.swish(); slide(mounted[name], ORDER.indexOf(name) > ORDER.indexOf(from) ? 24 : -24); }
+  if (from){ SFX.swish(); if (name === 'quest') SFX.woof(); slide(mounted[name], ORDER.indexOf(name) > ORDER.indexOf(from) ? 24 : -24); }
   setTimeout(() => localStorage.setItem('recall.view', name)); // never on the click path
 }
 export const invalidate = (...names) => { (names.length ? names : Object.keys(VIEWS)).forEach(n => dirty.add(n)); schedule(); };
@@ -50,7 +51,11 @@ export const invalidate = (...names) => { (names.length ? names : Object.keys(VI
 store.on(() => invalidate());
 window.addEventListener('recall:go', e => go(e.detail));
 
+let lastState = 'idle', syncFrom = 0;
 function syncPill(s){
+  if (s.state !== lastState){ // whine for a failure, awoo for a long job that finished while you were away
+    if (s.state === 'error') SFX.whine(); else if (s.state === 'syncing') syncFrom = Date.now(); else if (s.state === 'synced' && document.hidden && Date.now() - syncFrom > 10000) SFX.awoo();
+    lastState = s.state; }
   const el = $('sync'), n = store.pendingCount();
   $('syncIcon').setAttribute('href', `vendor/icons-sprite.svg#i-${s.state === 'offline' ? 'offline' : s.state === 'error' ? 'warning' : 'sync'}`);
   el.classList.toggle('busy', s.state === 'syncing'); el.classList.toggle('bad', s.state === 'error'); el.classList.toggle('off', s.state === 'offline');
@@ -65,7 +70,7 @@ function wire(){
   $('tabs').addEventListener('pointerdown', e => { const b = e.target.closest('.tab'); if (b) go(b.dataset.view); }); // on press, not release: a tab change should feel instant
   $('tabs').addEventListener('click', e => { const b = e.target.closest('.tab'); if (b) go(b.dataset.view); });
   $('aboutBtn').onclick = () => $('about').showModal();
-  $('sync').onclick = async () => { const ok = await sync.syncNow(); toast(ok ? 'Everything is synced.' : 'Couldn’t sync. Your changes are safe here, try again when you’re online.', ok ? 'success' : 'error'); };
+  $('sync').onclick = async () => { const ok = await sync.syncNow(); toast(ok ? 'Everything is synced.' : 'Couldn’t sync. Your changes are safe here, try again when you’re online.', ok ? 'success' : null); if (!ok) react('sad', 900); }; // the failure already whined
   $('newBlock').onclick = () => { go('today'); today.newBlock(); };
   $('moreBtn').onclick = e => menu(e.currentTarget, [
     { label:'Quest', run:() => go('quest') }, { label:'Follow-ups', run:openFollowUps }, { label:'Export week', run:exportWeek }, ...(getComputedStyle($('settingsBtn')).display === 'none' ? [{ label:'Settings', run:openSettings }] : []), // the action bar is gone at phone width
@@ -78,7 +83,7 @@ function wire(){
     $('itemX').hidden = !xTarget; if (xTarget) $('itemXLabel').textContent = xTarget.dataset.act === 'more' ? 'More' : 'Delete'; });
   $('itemX').onpointerdown = e => e.preventDefault();
   $('itemX').onclick = () => { if (xTarget?.isConnected) xTarget.click(); $('itemX').hidden = true; };
-  const shift = n => { const i = ORDER.indexOf(current), to = i < 0 ? 0 : i + n; if (ORDER[to]) go(ORDER[to]); else SFX.error(); }; // the ends stop, they don't wrap
+  const shift = n => { const i = ORDER.indexOf(current), to = i < 0 ? 0 : i + n; if (ORDER[to]) go(ORDER[to]); else { SFX.error(); bonk($('tabs')); } }; // the ends stop, they don't wrap
   $('tabL').onclick = () => shift(-1);
   $('tabR').onclick = () => shift(1);
   // Console feel: L R switch tabs, arrows move, A opens, B or Esc goes back, X acts on the item, Y is Settings. 1 2 3 jump.
@@ -93,6 +98,9 @@ function wire(){
   addEventListener('keydown', e => {
     const sheetOpen = !!document.querySelector('dialog[open]');
     if (e.ctrlKey && current && !sheetOpen && (e.key === 'Tab' || e.key === ',')){ e.preventDefault(); e.key === ',' ? openSettings() : shift(e.shiftKey ? -1 : 1); return; } // browsers keep Ctrl+Tab for themselves
+    if (e.target.type === 'range' && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')){ // the slider keeps left and right; a controller's key is synthetic, so step it here
+      if (!e.isTrusted){ e.key === 'ArrowLeft' ? e.target.stepDown() : e.target.stepUp(); e.target.dispatchEvent(new Event('input', { bubbles:true })); e.target.dispatchEvent(new Event('change', { bubbles:true })); }
+      return; }
     if (isTextEntry(e.target) || e.ctrlKey || e.metaKey || e.altKey || e.defaultPrevented) return;
     const key = e.key.toLowerCase(), wasTyping = typed === 'bubb', menuOpen = !!document.querySelector('.menu');
     clearTimeout(backT); // b waits a beat: if another key follows, it was the word bubbles
@@ -152,14 +160,14 @@ async function checkUpdate(){
 }
 
 (async function main(){
-  setMuted(localStorage.getItem('recall.muted') === '1'); // before boot: the store isn't open yet
-  initBrand(); boot(); wire(); initCursor();
+  setMuted(localStorage.getItem('recall.muted') === '1'); setVolume(+(localStorage.getItem('recall.volume') ?? 6)); // before boot: the store isn't open yet
+  initBrand(); boot(loadSounds()); wire(); initCursor();
   $('loading').innerHTML = loadingBlock('Opening RECALL.');
   setInterval(() => document.querySelectorAll('[data-pct]').forEach(e => { e.textContent = sync.pullPct(); }), 1000);
   const demo = new URLSearchParams(location.search).has('demo');
   await store.open(demo);
   if (demo) seedDemo();
-  const mute = () => { const m = store.pref('sound_muted', '0') === '1'; setMuted(m); localStorage.setItem('recall.muted', m ? '1' : '0'); };
+  const mute = () => { const m = store.pref('sound_muted', '0') === '1', v = store.pref('sound_volume', '6'); setMuted(m); setVolume(+v); setDogSounds(store.pref('dog_sounds', '1') !== '0'); localStorage.setItem('recall.muted', m ? '1' : '0'); localStorage.setItem('recall.volume', v); };
   mute(); store.on(mute);
   sync.onStatus(syncPill);
   store.on(() => syncPill(sync.getStatus()));

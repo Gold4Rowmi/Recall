@@ -1,5 +1,5 @@
 // Small shared UI helpers. Views render with template strings; esc() everything that came from data.
-import { paintDogs, SFX } from './brand.js';
+import { paintDogs, SFX, bonk, calm } from './brand.js';
 
 const MAP = { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' };
 export const esc = s => String(s ?? '').replace(/[&<>"']/g, c => MAP[c]);
@@ -11,7 +11,7 @@ export const isTextEntry = t => !!t && (t.isContentEditable || t.tagName === 'TE
 // What the arrows and the selection brackets can land on.
 export const ITEMS = 'button:not(:disabled), a[href], [role="button"], input:not([type="hidden"]), select, textarea';
 export function slide(el, dx){ // a page comes in from the side you moved toward
-  if (!matchMedia('(prefers-reduced-motion:reduce)').matches && document.documentElement.dataset.motion !== 'off') el.animate([{ transform:`translateX(${dx}px)`, opacity:0 }, { transform:'none', opacity:1 }], { duration:260, easing:'cubic-bezier(.2,.8,.2,1)' });
+  if (!calm()) el.animate([{ transform:`translateX(${dx}px)`, opacity:0 }, { transform:'none', opacity:1 }], { duration:260, easing:'cubic-bezier(.2,.8,.2,1)' });
 }
 export const backBtn = (label = 'Close', attrs = 'data-close') => `<button class="btn ghost" type="button" data-sfx="back" ${attrs}><span class="glyph">B</span>${esc(label)}</button>`;
 // Rommel carries a state; the header dog stays Idle, so there's one per screen. action is optional button HTML.
@@ -30,9 +30,15 @@ export function fieldErr(input, msg){
   const f = input.closest('.field'), h = document.createElement('span');
   f.querySelector('[id^="err-"]')?.remove(); f.classList.add('err');
   h.className = 'help'; h.id = 'err-' + ++errs; h.textContent = msg; f.appendChild(h);
-  input.setAttribute('aria-invalid', 'true'); input.setAttribute('aria-describedby', h.id); input.focus();
+  bonk(input); input.setAttribute('aria-invalid', 'true'); input.setAttribute('aria-describedby', h.id); input.focus();
   input.addEventListener('input', () => { f.classList.remove('err'); input.removeAttribute('aria-invalid'); input.removeAttribute('aria-describedby'); h.remove(); }, { once:true });
 }
+// Numbers sit on tape strips, so a change can roll like a counter.
+const STRIP = Array.from({ length:10 }, (_, i) => `<span>${i}</span>`).join('');
+export const rollDigits = v => [...String(v)].map(c => /\d/.test(c) ? `<span class="dg" aria-hidden="true"><span class="strip" style="transform:translateY(-${c}em)">${STRIP}</span></span>` : `<span aria-hidden="true">${esc(c)}</span>`).join('');
+export function fillRolling(el, markup){ const was = [...el.querySelectorAll('[data-roll]')].map(m => m.dataset.roll); fill(el, markup); if (calm()) return;
+  el.querySelectorAll('[data-roll]').forEach((m, i) => { if (was[i] === undefined || was[i] === m.dataset.roll) return; const to = m.dataset.roll.replace(/\D/g, ''), from = was[i].replace(/\D/g, '').padStart(to.length, '0').slice(-to.length);
+    m.querySelectorAll('.strip').forEach((s, j) => { if (from[j] !== to[j]) s.animate([{ transform:`translateY(-${from[j]}em)` }, { transform:`translateY(-${to[j]}em)` }], { duration:220, easing:'cubic-bezier(.2,.8,.2,1)' }); }); }); }
 // Set innerHTML and paint any Rommel inside.
 export function fill(el, markup){ el.innerHTML = markup; if (markup.includes('data-pose')) paintDogs(el); }
 
@@ -50,6 +56,7 @@ export function sheet(title, build, { wide = false, work = false } = {}){
   });
 }
 export const confirmSheet = (title, text, label, danger = true, cancelLabel = 'Keep it') => sheet(title, (b, close) => {
+  if (danger) SFX.grr();
   b.innerHTML = `<p>${esc(text)}</p><div class="sheet-actions">${backBtn(cancelLabel, 'data-no')}<button class="btn ${danger ? 'danger' : 'primary'}" type="button" data-yes><span class="glyph">${danger ? 'X' : 'A'}</span>${esc(label)}</button></div>`;
   b.querySelector('[data-no]').onclick = () => close(false);
   b.querySelector('[data-yes]').onclick = () => close(true);

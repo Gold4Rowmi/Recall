@@ -13,7 +13,8 @@
 .metrics{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); background:var(--raised); border:1px solid var(--frame); box-shadow:0 2px 0 var(--frame); border-radius:6px}
 .metric{display:grid; gap:4px; padding:12px 16px; min-width:0}
 .metric + .metric{border-left:1px solid var(--frame)}
-.mval{font-size:32px; line-height:1}
+.mval{display:flex; font-size:32px; line-height:1}
+.dg{display:block; width:.75em; height:1em; overflow:hidden} .strip{display:block} .strip span{display:block; height:1em; text-align:center}
 @media (max-width:640px){.metrics{grid-template-columns:repeat(2,minmax(0,1fr))} .metric:nth-child(3){border-left:0}}
 
 /* One row shape for every list. The action edge is reserved so hover never shifts text. */

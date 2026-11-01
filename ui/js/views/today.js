@@ -2,7 +2,7 @@
 import * as store from '../store.js';
 import * as P from '../planner.js';
 import { DAY_START, DAY_END, SLOT, fmtClock, priorityLabel, isDone } from '../planner.js';
-import { toast, react, SFX } from '../brand.js';
+import { toast, react, celebrate, SFX } from '../brand.js';
 import { esc, icon, sheet, menu, confirmSheet, loadingBlock, stateBlock, fill, backBtn, toggle, fieldErr } from '../ui.js';
 import { today, addDays, fmtDate, fmtDuration, mondayOf, nowMinute } from '../time.js';
 import { openExternal, getStatus, onStatus, syncNow } from '../sync.js';
@@ -75,12 +75,9 @@ function step(n){ const d = S.mode === 'day' ? n : S.mode === 'week' ? 7 * n : 0
   render(); }
 
 const ready = () => store.ctx.demo || store.all('tasks').length > 0 || !!store.getMeta('cur:tasks');
-let saidError = false;
 function notReady(){
   gridKey = ''; blocks.clear(); cal.className = 'cal'; cal._html = null;
   const failed = getStatus().state === 'error';
-  if (failed && !saidError) SFX.error();
-  saidError = failed;
   fill(cal, failed ? stateBlock('sad', 'Couldn’t load your plan', 'Check your connection and try again.', '<button class="btn primary" type="button" data-act="retry"><span class="glyph">A</span>Try again</button>') : loadingBlock('Getting your plan.'));
 }
 function render(){
@@ -90,7 +87,7 @@ function render(){
   root.querySelectorAll('[data-mode]').forEach(b => b.setAttribute('aria-pressed', b.dataset.mode === S.mode));
   const m = P.dayMetrics(S.date);
   renderHealth(m);
-  if (!ready()) notReady(); else { saidError = false; if (S.mode === 'month') renderMonth(); else renderGrid(); }
+  if (!ready()) notReady(); else if (S.mode === 'month') renderMonth(); else renderGrid();
   renderQueue(); renderRail(m); renderDrawer();
   const shown = S.mode === 'month' ? Array.from({ length:31 }, (_, i) => addDays(S.date.slice(0, 8) + '01', i)) : visibleDates();
   if (ready() && !shown.some(d => P.dayTasks(d).length)) root.dataset.rest = 'sleepy'; else delete root.dataset.rest; // the planner is never blank, so the header dog shows it
@@ -240,7 +237,7 @@ function onClick(e){
   const col = e.target.closest('.col');
   if (col){ const r = col.getBoundingClientRect(), minute = Math.floor((range[0] + (e.clientY - r.top) / PX) / SLOT) * SLOT; openEditor(null, { date:col.dataset.date, minute }); }
 }
-function toggleDone(task){ const t = P.toggleDone(task.id); if (isDone(t)){ react('happy', 700); SFX.success(); } else SFX.back(); }
+function toggleDone(task){ const t = P.toggleDone(task.id); if (isDone(t)) celebrate(); else SFX.back(); }
 const priorityItems = t => [[0, 'No priority'], [1, 'Make P1'], [2, 'Make P2'], [3, 'Make P3'], [4, 'Mark important']].filter(([p]) => p !== t.priority_hint).map(([p, label]) => ({ label, run:() => P.setPriority(t.id, p) }));
 function blockMenu(btn, t){
   menu(btn, [{ label:isDone(t) ? 'Mark not done' : 'Mark done', run:() => toggleDone(t) }, { label:'Edit', run:() => openEditor(t) }, { label:'Link ClickUp', run:() => openSession(t) },
@@ -405,7 +402,7 @@ function openSession(task){
       q('[data-avail]').innerHTML = shown.map(r => `<div class="qrow" data-cid="${esc(r.clickup_task_id)}"><span class="qtext"><span class="clip">${esc(r.name)}</span><span class="small muted clip">${sug.has(r.clickup_task_id) ? 'Suggested · ' : ''}${[cap(r.status), (r.assignee_names || []).join(', ')].filter(Boolean).map(esc).join(' · ')}</span></span><button class="btn" type="button" data-add>Link</button></div>`).join('') || '<p class="muted">No open ClickUp work matches.</p>';
       q('[data-linked]').innerHTML = list().map(l => { const r = store.get('clickup_tasks', l.clickup_task_id) || { name:l.clickup_task_id }; return `<div class="qrow${l.completed_in_session_at ? ' isdone' : ''}" data-cid="${esc(l.clickup_task_id)}"><button class="tick big" type="button" data-result aria-pressed="${!!l.completed_in_session_at}" aria-label="Done in session">${l.completed_in_session_at ? icon('check') : ''}</button><span class="qtext"><span class="clip">${esc(r.name)}</span><span class="small muted clip">${esc(cap(r.status))}</span></span>${r.url ? '<button class="btn" type="button" data-open>Open</button>' : ''}<button class="btn" type="button" data-remove data-sfx="back">Unlink</button></div>`; }).join('') || '<p class="muted">Attach everything you plan to batch in this block. Linked estimates are effort, not extra calendar time.</p>';
     }
-    q('[data-search]').oninput = paint;
+    q('[data-search]').oninput = e => { if (e.target.value.length === 1) SFX.sniff(); paint(); };
     q('[data-type]').onchange = e => { cur = store.put('work_sessions', { ...cur, session_type:e.target.value }); };
     q('[data-batch]').onchange = e => { cur = store.put('work_sessions', { ...cur, batch_label:e.target.value.trim() || null }); };
     q('[data-start]').onclick = () => { cur = P.startSession(cur); status(); };

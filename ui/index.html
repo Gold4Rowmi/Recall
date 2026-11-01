@@ -14,7 +14,7 @@
 </head>
 <body>
 <header class="head"><div class="in">
-  <svg class="px" id="dog" width="40" height="40" viewBox="0 0 10 10" role="img" aria-label="Rommel"></svg>
+  <button class="dogbtn" id="dogBtn" type="button" aria-label="Rommel"><svg class="px" id="dog" width="40" height="40" viewBox="0 0 10 10" aria-hidden="true"></svg></button>
   <span class="pixel appname">RECALL</span>
   <button class="keybtn" id="tabL" type="button" aria-label="Previous tab" title="Previous tab (L)" hidden><span class="key">L</span></button>
   <nav class="tabs" role="tablist" id="tabs" hidden>
@@ -62,7 +62,7 @@
 <div class="boot" id="boot" aria-label="Starting. Press anywhere to skip.">
   <div class="bootbox"><svg viewBox="0 0 64 40" aria-hidden="true">
     <rect class="wipe" x="0" y="0" width="64" height="40" style="fill:var(--shell)"/>
-    <g transform="translate(12 15)"><g id="bootDog"></g><g class="bw" id="bootWord"></g><g id="bootEmote" class="bemote"><rect x="4" y="-6" width="2" height="3" fill="#D9893B"/><rect x="4" y="-2" width="2" height="1" fill="#D9893B"/></g></g>
+    <g transform="translate(12 15)"><g id="bootDog"></g><g class="bw ghost" id="bootWordGhost"></g><g class="bw" id="bootWord"></g><g id="bootEmote" class="bemote"><rect x="4" y="-6" width="2" height="3" fill="#D9893B"/><rect x="4" y="-2" width="2" height="1" fill="#D9893B"/></g></g>
   </svg><span class="bname pixel">RECALL</span></div>
 </div>
 <script type="module" src="js/app.js"></script>

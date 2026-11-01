@@ -2,7 +2,7 @@
 import * as store from '../store.js';
 import * as P from '../planner.js';
 import * as sync from '../sync.js';
-import { toast, setMuted, paintDogs } from '../brand.js';
+import { toast, setMuted, setVolume, setDogSounds, paintDogs, SFX } from '../brand.js';
 import * as ui from '../ui.js';
 import { esc, icon, sheet, confirmSheet, fill, stateBlock, backBtn, toggle, isOn } from '../ui.js';
 import { today, mondayOf, addDays } from '../time.js';
@@ -56,7 +56,7 @@ export function exportWeek(){
       <div class="sheet-actions">${backBtn()}<button class="btn" type="button" data-copy>Copy</button><button class="btn primary" type="button" data-save><span class="glyph">A</span>Download</button></div>`;
     b.querySelector('[data-close]').onclick = () => close();
     b.querySelector('[data-copy]').onclick = async () => { try { await navigator.clipboard.writeText(text); toast('Copied.', 'success'); } catch { toast('Couldn’t copy. Select the text and copy it instead.', 'error'); } };
-    b.querySelector('[data-save]').onclick = () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type:'text/markdown' })); a.download = `recall-week-${monday}.md`; a.click(); URL.revokeObjectURL(a.href); toast('Download started.', 'success'); };
+    b.querySelector('[data-save]').onclick = () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type:'text/markdown' })); a.download = `recall-week-${monday}.md`; a.click(); URL.revokeObjectURL(a.href); toast('Download started.', 'big'); };
   }, { wide:true });
 }
 
@@ -66,11 +66,13 @@ function teamRows(){
 }
 export function openSettings(){
   sheet('Settings', (b, close) => {
-    const theme = localStorage.getItem('recall.theme') || 'system', muted = store.pref('sound_muted', '0') === '1', motion = store.pref('ui_motion_enabled', '1') !== '0';
+    const theme = localStorage.getItem('recall.theme') || 'system', muted = store.pref('sound_muted', '0') === '1', volume = +store.pref('sound_volume', '6'), motion = store.pref('ui_motion_enabled', '1') !== '0';
     const brk = store.pref('break_reminders_enabled', '1') !== '0', minute = +store.pref('break_reminder_minute', 780), hhmm = `${String(Math.floor(minute / 60)).padStart(2, '0')}:${String(minute % 60).padStart(2, '0')}`;
     b.innerHTML = `<div class="settings">
       <label class="field">Theme<select data-theme-pick><option value="system">Match Windows</option><option value="light">Light</option><option value="dark">Dark</option></select></label>
       ${toggle('Sound', !muted, 'data-sound')}
+      <div class="detent-ctl"><label class="field">Volume<input type="range" min="0" max="10" step="1" value="${volume}" data-volume></label><div class="ticks" aria-hidden="true">${Array.from({ length:11 }, (_, i) => `<i class="${i <= volume ? 'on' : ''}"></i>`).join('')}</div></div>
+      ${toggle('Dog sounds', store.pref('dog_sounds', '1') !== '0', 'data-dogs')}
       ${toggle('Motion', motion, 'data-motion')}
       ${toggle('Daily break reminder', brk, 'data-break')}
       <label class="field">Break time<input type="time" step="1800" data-break-at value="${hhmm}"><span class="help">Shows once a day, up to three hours after this time.</span></label>
@@ -85,6 +87,9 @@ export function openSettings(){
     $('[data-theme-pick]').value = theme;
     $('[data-theme-pick]').onchange = e => { set('recall.theme', e.target.value); applyTheme(e.target.value); paintDogs(); };
     $('[data-sound]').onclick = e => { const on = isOn(e.currentTarget); store.setPref('sound_muted', on ? '0' : '1'); setMuted(!on); };
+    $('[data-volume]').oninput = e => { const v = +e.target.value; setVolume(v); SFX.detent(v); b.querySelectorAll('.ticks i').forEach((t, i) => t.classList.toggle('on', i <= v)); };
+    $('[data-volume]').onchange = e => store.setPref('sound_volume', e.target.value);
+    $('[data-dogs]').onclick = e => { const on = isOn(e.currentTarget); store.setPref('dog_sounds', on ? '1' : '0'); setDogSounds(on); };
     $('[data-motion]').onclick = e => store.setPref('ui_motion_enabled', isOn(e.currentTarget) ? '1' : '0');
     $('[data-break]').onclick = e => store.setPref('break_reminders_enabled', isOn(e.currentTarget) ? '1' : '0');
     $('[data-about]').onclick = () => { close(); document.getElementById('about').showModal(); };

@@ -1,7 +1,7 @@
 // Command: manage. All five panels stay mounted; a sub-tab change flips `hidden`, never recomputes.
-import { toast, SFX } from '../brand.js';
+import { toast, bonk, SFX } from '../brand.js';
 import { newTask } from '../tasks.js';
-import { esc, fill, stateBlock, slide } from '../ui.js';
+import { esc, fill, fillRolling, stateBlock, slide } from '../ui.js';
 import { fmtDate } from '../time.js';
 import { cap } from '../analytics.js';
 import * as insights from '../insights.js';
@@ -57,9 +57,9 @@ export default {
       else if ('clear' in b.dataset){ const f = el.querySelector('[data-filter]'); f.value = ''; this.renderTeam(); f.focus(); }
       else if ('today' in b.dataset) window.dispatchEvent(new CustomEvent('recall:go', { detail:'today' }));
     });
-    el.querySelector('[data-filter]').addEventListener('input', () => this.renderTeam());
+    el.querySelector('[data-filter]').addEventListener('input', e => { if (e.target.value.length === 1) SFX.sniff(); this.renderTeam(); });
     addEventListener('keydown', e => { if (el.hidden || document.querySelector('dialog[open], .menu') || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || !['ArrowLeft', 'ArrowRight'].includes(e.key)) return;
-      const i = PANELS.findIndex(p => p[0] === this.active), next = PANELS[i + (e.key === 'ArrowLeft' ? -1 : 1)]?.[0]; if (!next) return SFX.error(); // the ends stop, they don't wrap
+      const i = PANELS.findIndex(p => p[0] === this.active), next = PANELS[i + (e.key === 'ArrowLeft' ? -1 : 1)]?.[0]; if (!next){ SFX.error(); return bonk(el.querySelector('.subtabs')); } // the ends stop, they don't wrap
       this.show(next); el.querySelector(`[data-sub="${next}"]`).focus(); });
     insights.onSnapshot(() => { if (!el.hidden) this.render(); });
     this.show(this.active);
@@ -103,7 +103,7 @@ export default {
     }
     this.painted = snap;
     const riskProjects = snap.projects.filter(p => ['RED', 'AMBER'].includes(p.signal) && p.window !== 'ON HOLD');
-    fill(q('[data-metrics]'), metricStrip(METRICS, { decisions:snap.needs.length, risk:snap.brief.risk.length || riskProjects.length, gaps:snap.planning_gaps, capacity:snap.brief.people.length }));
+    fillRolling(q('[data-metrics]'), metricStrip(METRICS, { decisions:snap.needs.length, risk:snap.brief.risk.length || riskProjects.length, gaps:snap.planning_gaps, capacity:snap.brief.people.length }));
     fill(q('[data-needs]'), snap.needs.slice(0, 7).map(n => workRow({ tone:'warn', title:n.title, meta:[n.status || 'Needs attention', dueText(n.due)].filter(Boolean).join(' · '), detail:n.why, action:n.row?.url ? openRow(n.row.url) : '' })).join('')
       || (snap.has_clickup ? stateBlock('sleepy', 'Nothing needs you', 'No decision is waiting on you.', '<button class="btn primary" type="button" data-today><span class="glyph">A</span>Go to Today</button>') : noClickUp('No ClickUp work yet')));
     fill(q('[data-moves]'), snap.suggestions.slice(0, 7).map((m, i) => workRow({ tone:'info', title:m.title, meta:m.owner, detail:m.action || m.why, action:`<button class="btn" type="button" data-queue="${i}">Queue</button>` })).join('') || `<p class="pad muted">${snap.has_clickup ? 'No move is recommended right now.' : 'Moves appear once ClickUp work is in.'}</p>`);
@@ -115,7 +115,7 @@ export default {
     }).join('') || noClickUp('No campaigns yet'));
     const g = snap.growth;
     const hasWeek = g.planned > 0 || snap.week.some(d => d.minutes);
-    fill(q('[data-kpis]'), metricStrip(KPIS, hasWeek ? { completion:g.completion + '%', deep:h1(g.deep), reactive:h1(g.reactive), top3:`${g.top3_done}/${g.top3}` } : { completion:'–', deep:'–', reactive:'–', top3:'–' }));
+    fillRolling(q('[data-kpis]'), metricStrip(KPIS, hasWeek ? { completion:g.completion + '%', deep:h1(g.deep), reactive:h1(g.reactive), top3:`${g.top3_done}/${g.top3}` } : { completion:'–', deep:'–', reactive:'–', top3:'–' }));
     fill(q('[data-chart]'), hasWeek ? chart(snap.week) : stateBlock('sleepy', 'Nothing to review yet', 'Finish a few blocks and your week shows up here.', '<button class="btn primary" type="button" data-today><span class="glyph">A</span>Go to Today</button>'));
     q('[data-coachbox]').hidden = !g.advice.length;
     fill(q('[data-coach]'), g.advice.slice(0, 5).map(a => `<li>${esc(a)}</li>`).join(''));

@@ -2,7 +2,7 @@
 import * as store from '../store.js';
 import { toast, SFX } from '../brand.js';
 import { openExternal } from '../sync.js';
-import { esc, fill, stateBlock, loadingBlock } from '../ui.js';
+import { esc, fill, fillRolling, rollDigits, stateBlock, loadingBlock } from '../ui.js';
 import { today, fmtDate, fmtDuration } from '../time.js';
 import { dayPlan, yesterdayRecap } from '../analytics.js';
 import * as insights from '../insights.js';
@@ -14,7 +14,7 @@ const $ = (root, sel) => root.querySelector(sel);
 
 export const openRow = url => `<button class="btn" type="button" data-url="${esc(url)}">Open</button>`;
 export const workRow = ({ tone, title, meta, detail, action = '' }) => `<div class="wrow ${tone}"><i class="tone" aria-hidden="true"></i><div class="wmain"><div class="clip wtitle" title="${esc(title)}">${esc(title)}</div><div class="small muted clip">${esc(meta)}</div>${detail ? `<div class="small">${esc(detail)}</div>` : ''}</div><div class="wact">${action}</div></div>`;
-export const metricStrip = (list, values) => `<div class="metrics">${list.map(([k, label]) => `<div class="metric"><span class="pixel mval">${esc(values[k])}</span><span class="small muted">${esc(label)}</span></div>`).join('')}</div>`;
+export const metricStrip = (list, values) => `<div class="metrics">${list.map(([k, label]) => `<div class="metric"><span class="pixel mval" role="img" aria-label="${esc(values[k])}" data-roll="${esc(values[k])}">${rollDigits(values[k])}</span><span class="small muted">${esc(label)}</span></div>`).join('')}</div>`;
 export const dueText = due => due ? fmtDate(due, { day:'2-digit', month:'short' }) : '';
 
 const retry = '<button class="btn" type="button" data-retry><span class="glyph">A</span>Try again</button>';
@@ -88,7 +88,7 @@ export default {
     }
     this.painted = snap;
     const ops = snap.brief;
-    fill($(el, '[data-metrics]'), metricStrip(METRICS, Object.fromEntries(METRICS.map(([k]) => [k, ops[k].length]))));
+    fillRolling($(el, '[data-metrics]'), metricStrip(METRICS, Object.fromEntries(METRICS.map(([k]) => [k, ops[k].length]))));
     const rows = [['risk', 3], ['attention', 3], ['scope', 2]].flatMap(([k, n]) => ops[k].slice(0, n).map(item => {
       const [kind, tone] = KINDS[k], due = dueText(item.due);
       return workRow({ tone, title:item.title, meta:kind + (due ? ' · ' + due : ''), detail:item.why || item.action, action:item.row?.url ? openRow(item.row.url) : '' });

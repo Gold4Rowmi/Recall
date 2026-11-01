@@ -9,6 +9,7 @@ const POSES = { idle:R,
   grin:  edit({0:'#.##..##.#',4:'..#e##e#..',9:'....pp....'}),
   sad:   edit({5:'#.t####t.#'}),
   sleepy:edit({4:'#.######.#',5:'#.t####t.#'}),
+  blink: edit({4:'#.######.#'}),
   wink:  edit({4:'#.#e####.#',9:'....pp....'}) };
 const DOG = { '#':'#16181D', t:'#D9893B', e:'#F4F5F7', p:'#E07A6B' };
 // outline = true draws the 1 px Paper ring every dark ground needs (viewBox needs 1 unit of room: -1 -1 12 12)
@@ -25,46 +26,58 @@ export function paintDogs(root = document){ const dk = isDark();
   if (root === document){ const l = $('aboutLock'); l.setAttribute('width', dk ? 123 : 117); l.setAttribute('height', dk ? 36 : 30); l.setAttribute('viewBox', dk ? '-1 -1 41 12' : '0 0 39 10'); l.innerHTML = dog('idle', 0, 0, dk) + word(dk ? '#F4F5F7' : '#16181D', 12, 4); } }
 
 let restPose = 'idle', reactT = 0;
-export function react(pose, ms = 700){ $('dog').innerHTML = dog(pose); clearTimeout(reactT); reactT = setTimeout(() => { reactT = 0; $('dog').innerHTML = dog(restPose); }, ms); }
+const EMOTE = '<g class="hemote"><rect x="11" y="0" width="1" height="3" fill="#D9893B"/><rect x="11" y="4" width="1" height="1" fill="#D9893B"/></g>';
+export const calm = () => matchMedia('(prefers-reduced-motion: reduce)').matches || document.documentElement.dataset.motion === 'off';
+export function react(pose, ms = 700, emote = ''){ $('dog').innerHTML = dog(pose) + emote; clearTimeout(reactT); reactT = setTimeout(() => { reactT = 0; $('dog').innerHTML = dog(restPose); }, ms); }
 // The planner is a workspace that is never blank, so the header dog carries Sleepy while it is empty or offline.
+// Only good news bounces: a hop in whole dog pixels. Errors shake.
+const hop = () => { if (!calm()) $('dog').animate([0, -4, -8, -4, 0].map(y => ({ transform:`translateY(${y}px)` })), { duration:240, easing:'steps(4,end)' }); };
+export function bonk(el){ if (!calm()) el.animate([0, -8, 8, -5, 3, 0].map(x => ({ transform:`translateX(${x}px)` })), { duration:300, easing:'steps(5,end)' }); }
+export function celebrate(big){ react('happy', 700); hop(); const r = $('dog').getBoundingClientRect(); sparks(r.left + r.width / 2, r.top + r.height / 2); big ? SFX.yip() : SFX.success(); }
 export function setRestPose(pose){ if (pose === restPose) return; restPose = pose; if (!reactT) $('dog').innerHTML = dog(pose); }
 
-/* ===== Chip sounds: Game Boy-style pulse (4 duties, 16-step volume) and LFSR noise ===== */
-let ac = null; let muted = false;
+/* ===== Sounds: the package's rendered WAVs through one master gain ===== */
+const NAMES = ['tick','click','confirm','back','error','chime','on','off','sting','swish','chomp','bubble-pop','startup','woof','yip','sniff','tag','whine','grr','awoo', ...Array.from({ length:11 }, (_, i) => 'detent-' + String(i).padStart(2, '0'))];
+const buffers = {};
+let ac = null, master = null, muted = false, volume = 6, dogSounds = true, queued = null, lastTick = 0, lastBack = 0, lastDog = 0;
 export const setMuted = v => { muted = v; };
-function audio(){ if (!ac){ try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){} } if (ac && ac.state === 'suspended') ac.resume(); return ac; }
-let lastBack = 0; // a cancel button and the sheet closing are one gesture
-const DUTY = { 12:0.125, 25:0.25, 50:0.5, 75:0.75 }, waves = {};
-function pulseWave(c, duty){ if (waves[duty]) return waves[duty]; const n = 32, re = new Float32Array(n), im = new Float32Array(n); for (let i = 1; i < n; i++) im[i] = 2 / (i * Math.PI) * Math.sin(i * Math.PI * duty); return (waves[duty] = c.createPeriodicWave(re, im)); }
-function blip(freq, dur, opt = {}){ if (muted) return; const c = audio(); if (!c) return; const t = c.currentTime + (opt.at || 0);
-  const o = c.createOscillator(), g = c.createGain(); o.setPeriodicWave(pulseWave(c, DUTY[opt.duty || 50])); o.frequency.setValueAtTime(freq, t);
-  const vol = opt.vol == null ? 10 : opt.vol, steps = Math.max(1, Math.round(dur * 64));
-  for (let i = 0; i <= steps; i++){ const v = Math.max(0, vol - (opt.fade === false ? 0 : Math.round(i * vol / steps))); g.gain.setValueAtTime(v / 15 * 0.12, t + i / 64); }
-  g.gain.setValueAtTime(0, t + dur); o.connect(g); g.connect(c.destination); o.start(t); o.stop(t + dur + 0.02); }
-function tap(at, vol){ if (muted) return; const c = audio(); if (!c) return; const n = Math.floor(c.sampleRate * 0.008), b = c.createBuffer(1, n, c.sampleRate), d = b.getChannelData(0); let l = 0x7FFF;
-  for (let i = 0; i < n; i++){ const bit = (l ^ (l >> 1)) & 1; l = (l >> 1) | (bit << 14); d[i] = ((l & 1) ? -1 : 1) * vol / 15 * 0.12; }
-  const s = c.createBufferSource(); s.buffer = b; s.connect(c.destination); s.start(c.currentTime + at); }
-let lastTick = 0;
+export const setVolume = n => { volume = n; if (master) master.gain.value = n / 10; };
+export const setDogSounds = v => { dogSounds = v; };
+function audio(){ if (!ac){ try { ac = new (window.AudioContext || window.webkitAudioContext)(); master = ac.createGain(); master.gain.value = volume / 10; master.connect(ac.destination); } catch(e){} } if (ac?.state === 'suspended') ac.resume(); return ac; }
+// Decoded on an offline context, which needs no gesture, so the first press already has its sound.
+export function loadSounds(){ const off = new OfflineAudioContext(1, 1, 44100);
+  return Promise.all(NAMES.map(async n => { try { buffers[n] = await off.decodeAudioData(await (await fetch(`vendor/sounds/${n}.wav`)).arrayBuffer()); } catch(e){ console.warn('sound not loaded', n, e); } })); }
+// Not ready means silent, never late. A suspended context with no gesture would save every sound up for the first press.
+function play(n, at = 0){ queued = null; if (muted || !buffers[n]) return; const c = audio(); if (!c || (c.state !== 'running' && !navigator.userActivation?.isActive)) return;
+  const s = c.createBufferSource(); s.buffer = buffers[n]; s.connect(master); s.start(c.currentTime + at); }
+// Seasoning: one per action, and never twice within 2 s.
+const bark = (n, at) => { const now = Date.now(); if (!dogSounds || now - lastDog < 2000) return; lastDog = now; play(n, at); };
 export const SFX = {
-  tick:    () => { const now = Date.now(); if (now - lastTick < 60) return; lastTick = now; blip(2093, 0.03, { duty:12, vol:7 }); },
-  confirm: () => { blip(988, 0.05, { duty:25, vol:8 }); blip(1319, 0.07, { duty:25, vol:8, at:0.05 }); },
-  back:    () => { const now = Date.now(); if (now - lastBack < 150) return; lastBack = now; blip(988, 0.05, { duty:25, vol:8 }); blip(659, 0.07, { duty:25, vol:8, at:0.05 }); },
-  error:   () => { blip(147, 0.09, { duty:50, vol:11 }); blip(110, 0.12, { duty:50, vol:11, at:0.1 }); },
-  success: () => [523, 659, 784, 1047].forEach((f, i) => blip(f, 0.09, { duty:50, vol:9, at:i * 0.06 })),
-  yip:     () => { blip(1319, 0.05, { duty:25, vol:9 }); blip(1568, 0.06, { duty:25, vol:9, at:0.07 }); },
-  chomp:   () => blip(220, 0.04, { duty:50, vol:10 }),
-  pop:     () => { blip(2637, 0.02, { duty:12, vol:6 }); tap(0.01, 4); },
-  woof:    () => { blip(392, 0.06, { duty:50, vol:10 }); blip(262, 0.08, { duty:50, vol:10, at:0.06 }); },
-  swish:   () => { if (muted) return; const c = audio(); if (!c) return; const n = Math.floor(c.sampleRate * 0.14), b = c.createBuffer(1, n, c.sampleRate), d = b.getChannelData(0); for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
-    const s = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain(), t = c.currentTime; s.buffer = b; f.type = 'bandpass'; f.Q.value = 1.4; f.frequency.setValueAtTime(500, t); f.frequency.exponentialRampToValueAtTime(3200, t + 0.13);
-    g.gain.setValueAtTime(0.06, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.14); s.connect(f); f.connect(g); g.connect(c.destination); s.start(t); },
-  startup: () => { [0, .11, .22, .33].forEach((t, i) => tap(t, 5 + i)); blip(784, 0.09, { duty:50, vol:12, at:.42, fade:false }); blip(1047, 0.55, { duty:50, vol:13, at:.51 }); }
+  tick:    () => { const now = Date.now(); if (now - lastTick < 60) return; lastTick = now; play('tick'); },
+  click:   () => play('click'),
+  confirm: () => play('confirm'),
+  back:    () => { const now = Date.now(); if (now - lastBack < 150) return; lastBack = now; play('back'); }, // a cancel button and the sheet closing are one gesture
+  error:   () => play('error'),
+  success: () => play('chime'),
+  on:      () => play('on'),
+  off:     () => play('off'),
+  swish:   () => play('swish'),
+  chomp:   () => play('chomp'),
+  pop:     () => play('bubble-pop'),
+  detent:  n => play('detent-' + String(n).padStart(2, '0')),
+  startup: () => play('startup'),
+  news:    () => { play('sting'); bark('tag', .2); },
+  woof:    () => bark('woof'), yip: () => bark('yip'), sniff: () => bark('sniff'), whine: () => bark('whine'), grr: () => bark('grr'), awoo: () => bark('awoo')
 };
-// Every press answers: one capture listener, so no button can be missed
-document.addEventListener('click', e => { const b = e.target.closest('button, [role="button"], label.btn, a.btn, .col'); if (!b || b.closest('#boot') || b.matches('.tab,.subtab,.keybtn')) return; // those answer with a swish or a buzz
-  if (b.classList.contains('primary')) SFX.confirm(); else if (b.dataset.sfx) SFX[b.dataset.sfx](); else if (b.closest('dialog') && /^(cancel|close)$/i.test(b.textContent.trim())) SFX.back(); else SFX.tick(); }, true);
-// Selects, colours and dates answer when they change; text fields would tick on every blur.
-document.addEventListener('change', e => { if (!e.target.matches('textarea, input:not([type]), input[type="text"], input[type="email"], input[type="password"]')) SFX.tick(); }, true);
+// Every press answers: one pair of capture listeners, so no button can be missed.
+const PRESS = 'button, [role="button"], label.btn, a.btn, .col', OWN_SOUND = '.tab,.subtab,.keybtn,.dogbtn'; // those answer with a swish, a buzz or a woof
+document.addEventListener('pointerdown', e => { const b = e.target.closest(PRESS); if (b && !b.disabled && !b.closest('#boot') && !b.matches(`${OWN_SOUND},.primary,.toggle,[data-sfx]`)) SFX.click(); }, true);
+document.addEventListener('click', e => { const b = e.target.closest(PRESS); if (!b || b.closest('#boot') || b.matches(OWN_SOUND)) return;
+  if (b.matches('.toggle')) return SFX[b.getAttribute('aria-checked') === 'true' ? 'off' : 'on']();
+  const n = b.classList.contains('primary') ? 'confirm' : b.dataset.sfx || (b.closest('dialog') && /^(cancel|close)$/i.test(b.textContent.trim()) ? 'back' : e.detail ? null : 'click'); // a key press has no pointerdown
+  if (n){ queued = n; setTimeout(() => { if (queued){ const q = queued; queued = null; SFX[q](); } }); } }, true); // waits for the handlers: a richer sound from one of them replaces it
+// Selects, colours and dates answer when they change; text fields would tick on every blur, and a slider has its detents.
+document.addEventListener('change', e => { if (!e.target.matches('textarea, input:not([type]), input[type="text"], input[type="email"], input[type="password"], input[type="range"]')) SFX.tick(); }, true);
 
 let toastT;
 // action = { label, run }: an inline undo instead of a confirm dialog for reversible work.
@@ -72,23 +85,25 @@ export function toast(msg, kind, action){ const t = $('toast'); t.textContent = 
   if (action){ const b = document.createElement('button'); b.type = 'button'; b.textContent = action.label; b.onclick = () => { t.classList.remove('show'); action.run(); }; t.appendChild(b); }
   t.classList.remove('show'); t.hidePopover?.(); t.showPopover?.(); void t.offsetWidth; // re-entering the top layer puts it above any open sheet
   t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), action ? 6000 : 2400);
-  if (kind === 'error'){ react('sad', 900); SFX.error(); } else if (kind === 'success'){ react('happy', 700); SFX.success(); } else if (kind === 'new'){ react('alert', 700); } }
+  if (kind === 'error'){ react('sad', 900); SFX.error(); } else if (kind === 'success') celebrate(); else if (kind === 'big') celebrate(true); else if (kind === 'new'){ react('alert', 700, EMOTE); SFX.news(); } }
 
 /* Boot: once per launch, skippable after 300 ms, ends on the logo */
-export function boot(){
+export function boot(sounds){
   const el = $('boot'), timers = [], t0 = Date.now(), reduce = matchMedia('(prefers-reduced-motion: reduce)').matches, dk = isDark(); let done = false;
   // Before the wipe he sits on the theme's ground, so a dark ground gets the outline and a Paper word. The shell is light.
-  $('bootDog').innerHTML = dog('sleepy', 0, 0, dk); $('bootWord').innerHTML = word(dk ? '#F4F5F7' : '#16181D', 12, 4);
+  $('bootDog').innerHTML = dog('sleepy', 0, 0, dk); $('bootWord').innerHTML = $('bootWordGhost').innerHTML = word(dk ? '#F4F5F7' : '#16181D', 12, 4);
+  el.querySelector('.bootbox').style.width = Math.min(10, Math.floor(innerWidth * .92 / 64)) * 64 + 'px'; // one dot is a whole number of pixels
   const at = (ms, fn) => timers.push(setTimeout(fn, ms));
   const skip = () => { if (Date.now() - t0 > 300) finish(); };
   const onKey = e => { e.stopImmediatePropagation(); skip(); }; // a key during boot skips it and is not a shortcut
   const finish = () => { if (done) return; done = true; timers.forEach(clearTimeout); removeEventListener('keydown', onKey, true); el.remove(); };
   el.addEventListener('click', skip); addEventListener('keydown', onKey, true);
-  if (audio() && ac.state === 'running') SFX.startup();
+  if (audio() && ac.state === 'running') sounds.then(() => { if (Date.now() - t0 < 200) SFX.startup(); }); // past that it would miss the picture; browsers only allow it after a press
   const onShell = () => { $('bootWord').innerHTML = word('#16181D', 12, 4); };
   if (reduce){ el.classList.add('done','named'); $('bootDog').innerHTML = dog('idle'); onShell(); at(800, finish); return; }
   el.classList.add('booting');
-  at(510, () => { $('bootDog').innerHTML = dog('alert'); onShell(); $('bootEmote').classList.add('show'); el.classList.add('wiping'); });
+  at(510, () => { $('bootDog').innerHTML = dog('alert', 0, 0, dk); $('bootEmote').classList.add('show'); el.classList.add('wiping'); });
+  at(680, () => { $('bootDog').innerHTML = dog('alert'); onShell(); }); // the shell has risen behind them by now
   at(800, () => { $('bootDog').innerHTML = dog('idle'); $('bootEmote').classList.remove('show'); });
   at(900, () => el.classList.add('named'));
   at(1100, finish);
@@ -99,7 +114,7 @@ let BUB = false; const SVGNS = 'http://www.w3.org/2000/svg';
 function bubbleSvg(size){ const b = document.createElementNS(SVGNS, 'svg'); b.setAttribute('class', 'bub'); b.setAttribute('width', size); b.setAttribute('height', size); b.setAttribute('viewBox', '0 0 8 8');
   b.innerHTML = '<path fill="currentColor" d="M2 0h4v1H2zM1 1h1v1H1zM6 1h1v1H6zM0 2h1v4H0zM7 2h1v4H7zM1 6h1v1H1zM6 6h1v1H6zM2 7h4v1H2z"/><path fill="#ECEEF1" opacity=".7" d="M2 1h4v1H2zM1 2h6v4H1zM2 6h4v1H2z"/><path fill="#7AA7F2" d="M2 2h2v1H2zM2 3h1v1H2z"/>';
   return b; }
-function sparks(x, y){ if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+function sparks(x, y){ if (calm()) return;
   [[0,-1],[1,-1],[1,0],[1,1],[0,1],[-1,1],[-1,0],[-1,-1]].forEach(d => { const s = document.createElement('span'), dist = Math.random() < .5 ? 32 : 64;
     s.className = 'spark'; s.style.left = x + 'px'; s.style.top = y + 'px'; s.style.setProperty('--dx', d[0] * dist + 'px'); s.style.setProperty('--dy', d[1] * dist + 'px');
     document.body.appendChild(s); setTimeout(() => s.remove(), 480); }); }
@@ -152,7 +167,7 @@ export function initBrand(){
   new MutationObserver(() => paintDogs()).observe(document.documentElement, { attributes:true, attributeFilter:['data-theme'] });
   $('toast').showPopover?.(); // stays open off-screen so the slide always has a start
   $('about').addEventListener('close', () => SFX.back());
-  $('dog').style.cursor = 'pointer';
-  $('dog').addEventListener('click', () => { const now = Date.now(); eggTaps = eggTaps.filter(t => now - t < 1500); eggTaps.push(now);
-    if (eggTaps.length >= 5){ eggTaps = []; bubbles(); } else react('alert', 300); });
+  setInterval(() => { if (restPose === 'idle' && !reactT && !document.hidden && !calm()) react('blink', 120); }, 4000);
+  $('dogBtn').addEventListener('click', () => { const now = Date.now(); eggTaps = eggTaps.filter(t => now - t < 1500); eggTaps.push(now);
+    if (eggTaps.length >= 5){ eggTaps = []; bubbles(); } else { react('alert', 300); hop(); SFX.woof(); } });
 }

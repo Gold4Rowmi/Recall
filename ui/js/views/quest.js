@@ -45,7 +45,7 @@ function celebrate(out, oldXp){
   out.events.slice(-3).forEach(e => scenes.forEach(s => s.play(e)));
   if (!out.scores.length) return;
   const gained = out.progress.xp - oldXp, oldLv = rules.levelFromXp(oldXp), lv = out.progress.level, boss = out.bosses.at(-1);
-  if (boss) { toast(`${boss.boss_name} defeated. +${gained} XP banked.`, 'success'); return; }
+  if (boss) { toast(`${boss.boss_name} defeated. +${gained} XP banked.`, 'big'); return; }
   if (lv > oldLv){ const rank = rules.rankForLevel(lv), oldRank = rules.rankForLevel(oldLv); toast(rank.tier > oldRank.tier ? `New rank: ${rank.name}.` : `Level ${lv}. +${gained} XP banked.`, 'success'); return; }
   const a = out.achievements.at(-1), goal = a && rules.GOALS.find(g => g.code === a.achievement_key);
   if (gained) toast(goal && out.scores.length === 1 ? `${goal.title}. +${gained} XP banked.` : `${out.scores.length === 1 ? 'Yesterday' : out.scores.length + ' days'} scored. +${gained} XP banked.`, 'success');

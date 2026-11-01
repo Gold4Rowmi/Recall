@@ -52,8 +52,13 @@ const SWORD_SWING = [[11,6,'g'],[12,5,'g'],[12,6,'g'],[12,7,'g'],[13,6,'m'],[14,
 
 const GLYPH = { '0':'777','1':'262','2':'636','3':'717','4':'571','5':'474','6':'477','7':'711','8':'757','9':'771',' ':'000','-':'070','+':'272','*':'525','.':'001','o':'075','#':'575','%':'424','@':'777','/':'124','\\':'421','_':'007','^':'250','(':'242',')':'212','<':'141','>':'414','=':'707','|':'222','!':'202','[':'646',']':'313','"':'500' };
 // 3 x 3 rows expanded to 3 x 5 by holding the middle row: small, legible, and one unit like everything else.
-function text(g, str, x, y, color){ g.fillStyle = color; [...String(str)].forEach((ch, i) => { const rows = GLYPH[ch] || GLYPH[' '], px = x + i * 4;
-  [rows[0], rows[1], rows[1], rows[2], rows[2]].forEach((r, ry) => { const v = +r; for (let b = 0; b < 3; b++) if (v & (4 >> b)) g.fillRect(px + b, y + ry, 1, 1); }); }); }
+// Damage numbers are Silkscreen's digits, pixel for pixel. The symbols above are ASCII art, not type.
+const DIGIT = { '0':['.##.','#..#','#..#','#..#','.##.'], '1':['##.','.#.','.#.','.#.','###'], '2':['###.','...#','.##.','#...','####'], '3':['###.','...#','.##.','...#','###.'], '4':['#.#.','#.#.','####','..#.','..#.'],
+  '5':['####','#...','###.','...#','###.'], '6':['.##.','#...','###.','#..#','.##.'], '7':['####','...#','..#.','.#..','.#..'], '8':['.##.','#..#','.##.','#..#','.##.'], '9':['.##.','#..#','.###','...#','.##.'] };
+function text(g, str, x, y, color){ g.fillStyle = color; let px = x; [...String(str)].forEach(ch => {
+  if (DIGIT[ch]){ DIGIT[ch].forEach((r, ry) => [...r].forEach((c, b) => { if (c === '#') g.fillRect(px + b, y + ry, 1, 1); })); px += DIGIT[ch][0].length + 1; return; }
+  const rows = GLYPH[ch] || GLYPH[' ']; px += 4;
+  [rows[0], rows[1], rows[1], rows[2], rows[2]].forEach((r, ry) => { const v = +r; for (let b = 0; b < 3; b++) if (v & (4 >> b)) g.fillRect(px - 4 + b, y + ry, 1, 1); }); }); }
 
 function rect(g, x, y, w, h, c){ g.fillStyle = c; g.fillRect(x, y, w, h); }
 function line(g, x0, y0, x1, y1, c){ g.fillStyle = c; const dx = Math.abs(x1 - x0), dy = -Math.abs(y1 - y0), sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1; let e = dx + dy;
@@ -128,7 +133,9 @@ function drawBoss(g, style, area, kind, x, y){
   if (style === 'Blob'){ const big = scale2x(raw); blit(g, ringOf(big).map(p => ({ ...p, c:A })), x, y); blit(g, big, x, y); return; }
   blit(g, scale2x(raw), x, y);
 }
-const flag = (g, style, x, y, c) => { const s = style === 'ASCII' ? 2 : 1; rect(g, x * s, y * s, s, 14 * s, c); rect(g, (x + 1) * s, y * s, 7 * s, 4 * s, PX.banner); };
+const FLAG = ['##......', '#t####..', '#ttttt#.', '#t####..']; // icons/svg/flag.svg; the pole runs down to the ground
+const flag = (g, style, x, y, c) => { const s = style === 'ASCII' ? 2 : 1; rect(g, x * s, y * s, s, 14 * s, c); rect(g, x * s, (y + 13) * s, 2 * s, s, c);
+  FLAG.forEach((r, ry) => [...r].forEach((p, rx) => { if (p !== '.') rect(g, (x + rx) * s, (y + ry) * s, s, s, p === 't' ? PX.banner : c); })); };
 
 /* ===== Effects: every style has its own hit and hurt language ===== */
 function attackFx(g, style, cx, cy, step, power){
