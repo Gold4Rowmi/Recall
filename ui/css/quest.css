@@ -11,7 +11,7 @@
 .q-pick select{width:auto}
 .q-meter{height:12px; background:var(--sunken); border:1px solid var(--frame); padding:1px}
 .q-meter i{display:block; height:100%; background:var(--chart, var(--shell-deep))}
-.q-meter.boss i{background:var(--danger)} .q-meter.good i{background:var(--ok)} .q-meter.warn i{background:var(--warn)} .q-meter.low i{background:var(--danger)}
+.q-meter.boss i{background:var(--danger)} .q-meter.good i{background:var(--success)} .q-meter.warn i{background:var(--warning)} .q-meter.low i{background:var(--danger)}
 .q-rank{gap:12px; margin-bottom:12px}
 .q-crest{position:relative; flex:none; width:48px}
 .q-crest .pixel{position:absolute; left:0; right:0; top:20px; text-align:center; font-size:16px; line-height:1; color:var(--head-ink); -webkit-font-smoothing:none}
@@ -22,7 +22,7 @@
 .q-goals,.q-days{list-style:none; margin:0; padding:0; display:grid; gap:4px}
 .q-goals li{display:grid; grid-template-columns:12px minmax(0,1fr) auto; gap:8px; align-items:center; min-height:24px}
 .q-goals i{width:12px; height:12px; border:1px solid var(--frame); background:var(--sunken)}
-.q-goals li.on i{background:var(--ok); border-color:var(--ok)}
+.q-goals li.on i{background:var(--success); border-color:var(--success)}
 .q-days li{display:flex; align-items:center; gap:8px; min-height:24px}
 .q-cap{display:block; width:36px; height:26px; line-height:22px; text-align:center; font-size:16px; color:var(--ink); border:2px solid var(--ink); box-shadow:0 2px 0 var(--ink); border-radius:4px}
 .q-rail{display:grid; gap:6px; width:100%; min-height:44px; padding:6px 0; border:0; background:none; color:inherit; font:inherit; text-align:left; cursor:pointer}

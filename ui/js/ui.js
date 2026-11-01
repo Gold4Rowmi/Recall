@@ -50,6 +50,6 @@ export function menu(anchor, items){
   m.style.left = Math.max(8, Math.min(r.left, innerWidth - m.offsetWidth - 8)) + 'px';
   m.querySelector('button')?.focus();
   const off = e => { if (e.type === 'keydown' ? e.key === 'Escape' : !m.contains(e.target)){ if (e.type === 'keydown'){ e.stopPropagation(); SFX.back(); } closeMenu(); } };
-  dropMenu = () => { dropMenu = null; m.remove(); document.removeEventListener('pointerdown', off, true); document.removeEventListener('keydown', off, true); };
+  dropMenu = () => { dropMenu = null; m.remove(); document.removeEventListener('pointerdown', off, true); document.removeEventListener('keydown', off, true); anchor.focus(); };
   document.addEventListener('pointerdown', off, true); document.addEventListener('keydown', off, true);
 }

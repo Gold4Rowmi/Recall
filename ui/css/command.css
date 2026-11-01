@@ -20,7 +20,7 @@
 .wrow{display:grid; grid-template-columns:4px minmax(0,1fr) 88px; gap:12px; align-items:center; padding:12px 16px 12px 12px; min-height:60px}
 .wrow + .wrow{border-top:1px solid var(--frame)}
 .wrow .tone{align-self:stretch; border-radius:4px; background:var(--frame)}
-.wrow.bad .tone{background:var(--danger)} .wrow.warn .tone{background:var(--warn)} .wrow.good .tone{background:var(--ok)} .wrow.info .tone{background:var(--info)}
+.wrow.bad .tone{background:var(--danger)} .wrow.warn .tone{background:var(--warning)} .wrow.good .tone{background:var(--success)} .wrow.info .tone{background:var(--info)}
 .wmain{min-width:0} .wtitle{font-weight:600}
 .wmain .small:last-child{overflow-wrap:anywhere}
 .wact{display:flex; justify-content:flex-end}

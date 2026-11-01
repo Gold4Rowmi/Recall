@@ -1,6 +1,7 @@
 [data-motion="off"] *{transition:none!important;animation:none!important}
 
-.tday{height:100%; display:grid; grid-template-rows:auto auto minmax(0,1fr); gap:12px; position:relative; overflow:hidden}
+/* 5 px of slack past the view's padding keeps focus rings inside the clip */
+.tday{height:calc(100% + 10px); margin:-5px; padding:5px; display:grid; grid-template-rows:auto auto minmax(0,1fr); gap:12px; position:relative; overflow:hidden}
 .tbar{display:flex; align-items:center; gap:8px; flex-wrap:wrap}
 .tbar h1{font-size:16px; margin-left:8px; font-weight:400}
 .seg{display:inline-flex; border:1px solid var(--frame); border-radius:6px; background:var(--raised); box-shadow:0 2px 0 var(--frame)}
@@ -16,7 +17,7 @@
 .hcell+.hcell{border-left:1px solid var(--frame)}
 .hcell span{font-size:12px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 .hcell b{font-size:15px}
-.hcell.warn,.hcell.warn span{color:var(--warn)} .hcell.good,.hcell.good span{color:var(--ok)}
+.hcell.warn,.hcell.warn span{color:var(--warning)} .hcell.good,.hcell.good span{color:var(--success)}
 
 .tmain{display:grid; grid-template-columns:minmax(0,1fr) 300px; gap:12px; min-height:0; position:relative; overflow:hidden; padding-bottom:2px}
 .tleft{display:grid; grid-template-rows:minmax(0,1fr) auto; gap:12px; min-height:0; min-width:0}
@@ -129,7 +130,7 @@ body.dragging{cursor:grabbing; user-select:none}
 .drawer{position:absolute; top:0; right:0; bottom:0; width:min(420px,100%); z-index:6; display:grid; grid-template-columns:minmax(0,1fr); grid-template-rows:auto minmax(0,1fr); gap:8px; padding:12px; background:var(--raised); border:1px solid var(--frame); box-shadow:0 2px 0 var(--frame); border-radius:6px; transform:translateX(calc(100% + 16px)); visibility:hidden; transition:transform .16s ease-in,visibility .16s}
 .drawer.open{transform:none; visibility:visible; transition:transform .26s var(--spring)}
 .dhead{display:flex; align-items:center; gap:8px}
-.dbody{overflow:auto; min-height:0; display:grid; grid-template-columns:minmax(0,1fr); align-content:start; gap:8px}
+.dbody{overflow:auto; min-height:0; padding:5px; margin:-5px; display:grid; grid-template-columns:minmax(0,1fr); align-content:start; gap:8px}
 .dbody>p{margin:0}
 .dlist,.fu-list{display:grid; min-width:0}
 .capture{display:flex; gap:8px}
@@ -153,7 +154,7 @@ body.dragging{cursor:grabbing; user-select:none}
 .sesslist{height:clamp(120px,calc(100vh - 400px),320px); overflow:auto}
 .sessbar{margin-top:12px}
 
-@media (max-height:720px){ /* the queue collapses to its header so the calendar keeps the window */
+@media (max-height:720px),(max-width:600px){ /* the queue collapses to its header so the calendar keeps the window */
   .queue .qrow,.queue .qempty{display:none}
   .queue{padding:4px 12px}
   .queue .qhead{min-height:44px}
@@ -167,4 +168,10 @@ body.dragging{cursor:grabbing; user-select:none}
   .health{grid-template-columns:1fr 1fr}
   .hcell:nth-child(3){border-left:0}
   .two,.sess{grid-template-columns:1fr}
+}
+@media (max-width:600px){ /* the page scrolls, so the calendar gets real height straight under the toolbar */
+  .tday{height:auto; margin:0; padding:0; grid-template-rows:none; overflow:visible}
+  .tmain{order:1} .health{order:2}
+  .tleft{grid-template-rows:auto auto}
+  .cal{height:420px}
 }

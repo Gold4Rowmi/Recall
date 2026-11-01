@@ -11,7 +11,7 @@ import * as quest from './quest.js';
 import { mountFollowUps, renderFollowUps, personOptions } from './utilities.js';
 
 const SLOT_PX = 24, PX = SLOT_PX / SLOT;
-const S = { mode:localStorage.getItem('recall.mode') || 'week', date:today(), drawer:null, drag:null };
+const S = { mode:localStorage.getItem('recall.mode') || (matchMedia('(max-width:600px)').matches ? 'day' : 'week'), date:today(), drawer:null, drag:null };
 const $ = (root, sel) => root.querySelector(sel);
 const person = id => store.get('workspace_people', id);
 const colourOf = t => t.color || person(t.assigned_person_id)?.color || 'var(--soft)';
@@ -64,7 +64,8 @@ function mount(el){
   addEventListener('recall:drawer', e => setDrawer(e.detail));
   quest.mountRail?.($(el, '#questRail'));
   const cue = () => { $(rail, '.railcue').hidden = rail.scrollHeight - rail.clientHeight - rail.scrollTop <= 16; };
-  rail.addEventListener('scroll', cue, { passive:true }); new ResizeObserver(cue).observe(rail);
+  let railShown = false; // renderRail skips a hidden rail, so catch up when widening brings it back
+  rail.addEventListener('scroll', cue, { passive:true }); new ResizeObserver(() => { const on = !!rail.offsetParent; if (on && !railShown) renderRail(P.dayMetrics(S.date)); railShown = on; cue(); }).observe(rail);
   onStatus(() => { if (!ready()) render(); });
   setInterval(tick, 30000);
 }
@@ -187,13 +188,16 @@ function renderRail(m){
   rail.dispatchEvent(new Event('scroll'));
 }
 
+let drawerFrom = null; // where focus goes back to when the drawer closes
 function setDrawer(tab){
+  if (tab && !S.drawer) drawerFrom = document.activeElement;
   S.drawer = tab; drawer.classList.toggle('open', !!tab); drawer._html = null;
   if (tab){ drawer.innerHTML = `<div class="dhead"><div class="seg">${[['queue', 'Queue'], ['followups', 'Follow-ups'], ['details', 'Details']].map(([k, l]) => `<button type="button" data-tab="${k}" aria-pressed="${k === tab}">${l}</button>`).join('')}</div><span class="spacer"></span><button class="btn icon" type="button" data-act="close" data-sfx="back" aria-label="Close">×</button></div><div class="dbody"></div>`;
     if (tab === 'queue'){ $(drawer, '.dbody').innerHTML = `<form class="capture" id="qadd"><input aria-label="New queue item" placeholder="Capture something" required><button class="btn" type="submit">Add</button></form><div class="dlist"></div>`;
       $(drawer, '#qadd').onsubmit = e => { e.preventDefault(); const i = e.target.querySelector('input'); P.createBlock({ title:i.value.trim(), duration:30 }); i.value = ''; }; }
     if (tab === 'followups') mountFollowUps($(drawer, '.dbody'));
-    renderDrawer(); }
+    renderDrawer(); $(drawer, `[data-tab="${tab}"]`).focus(); }
+  else { drawerFrom?.focus(); drawerFrom = null; }
 }
 function renderDrawer(){
   if (!S.drawer) return; const body = $(drawer, '.dbody');

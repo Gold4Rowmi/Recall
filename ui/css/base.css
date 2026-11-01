@@ -8,7 +8,8 @@
   --shell:#6AA8F5; --shell-deep:#1F5FBF;
   --paper:#ECEEF1; --raised:#FFFFFF; --sunken:#F4F5F7; --grid:#DDE1E6; --frame:#C9CED6;
   --ink:#16181D; --soft:#3A3F48; --muted:#5B6270; --on-ink:#F4F5F7; --faint:#9EA5B0;
-  --tan:#D9893B; --blue:#2F6FE0; --sel-soft:#E3ECFC; --danger:#C0352F; --ok:#1F7A4D; --warn:#9C4F12; --drop:#000000;
+  --tan:#D9893B; --blue:#2F6FE0; --sel-soft:#E3ECFC; --danger:#C0352F; --success:#1F7A44; --warning:#8A5A00; --drop:#000000;
+  --success-soft:#DDF1E4; --warning-soft:#FBEBC8; --danger-soft:#FBE1DF; --border-strong:#5B6270;
   --head-ink:#16181D; --head-on:#F4F5F7; --head-hover:rgba(255,255,255,.3);
   --chart:var(--soft); --info:var(--muted); --on-danger:#FFFFFF; --scrim:rgba(22,24,29,.5);
   --f-pixel:'Silkscreen', ui-monospace, monospace;  /* 8, 16, 24, 32, 64 px only */
@@ -18,12 +19,12 @@
 }
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
   --paper:#121418; --raised:#1A1D22; --sunken:#0E1013; --grid:#1B1E24; --frame:#2E333B;
-  --ink:#ECEEF1; --soft:#C3C8D0; --muted:#9EA5B0; --on-ink:#16181D; --faint:#5B6270;
-  --shell-deep:var(--shell); --tan:#E8A96B; --blue:#7AA7F2; --sel-soft:#1D2A40; --danger:#F08A84; --ok:#7BD3A4; --warn:#E8A96B; --on-danger:#16181D; color-scheme:dark; }}
+  --ink:#F4F5F7; --soft:#C3C8D0; --muted:#9EA5B0; --on-ink:#16181D; --faint:#5B6270;
+  --shell-deep:var(--shell); --tan:#E8A96B; --blue:#7AA7F2; --sel-soft:#1D2A40; --danger:#F08A84; --success:#6CC28F; --warning:#E9B65A; --success-soft:#17301F; --warning-soft:#33290F; --danger-soft:#3A1C1B; --border-strong:#8A919C; --on-danger:#16181D; color-scheme:dark; }}
 :root[data-theme="dark"]{
   --paper:#121418; --raised:#1A1D22; --sunken:#0E1013; --grid:#1B1E24; --frame:#2E333B;
-  --ink:#ECEEF1; --soft:#C3C8D0; --muted:#9EA5B0; --on-ink:#16181D; --faint:#5B6270;
-  --shell-deep:var(--shell); --tan:#E8A96B; --blue:#7AA7F2; --sel-soft:#1D2A40; --danger:#F08A84; --ok:#7BD3A4; --warn:#E8A96B; --on-danger:#16181D; color-scheme:dark; }
+  --ink:#F4F5F7; --soft:#C3C8D0; --muted:#9EA5B0; --on-ink:#16181D; --faint:#5B6270;
+  --shell-deep:var(--shell); --tan:#E8A96B; --blue:#7AA7F2; --sel-soft:#1D2A40; --danger:#F08A84; --success:#6CC28F; --warning:#E9B65A; --success-soft:#17301F; --warning-soft:#33290F; --danger-soft:#3A1C1B; --border-strong:#8A919C; --on-danger:#16181D; color-scheme:dark; }
 
 *{box-sizing:border-box}
 html,body{margin:0; height:100%; background:var(--paper); overflow:hidden}
@@ -52,18 +53,19 @@ svg.px{display:block; shape-rendering:crispEdges}
 .head .btn.primary{background:var(--head-ink); color:var(--head-on); border-color:var(--head-ink)}
 .head .btn:not(.primary):hover{background:var(--head-hover)}
 .head :focus-visible{outline-color:var(--head-ink)} /* Cursor Blue would vanish on the blue shell */
-/* Page slide tabs, from the UI guidelines: an ink block springs between equal tabs in a raised tray */
-.tabs{position:relative; display:inline-grid; grid-auto-flow:column; grid-auto-columns:88px; padding:4px; background:var(--raised); border:1px solid var(--frame); border-radius:6px}
-.ind{position:absolute; top:4px; left:4px; width:calc((100% - 8px) / 3); height:calc(100% - 8px); background:var(--ink); border-radius:4px; transform:translateX(calc(100% * var(--i, 0))); transition:transform .26s var(--spring)}
+/* Page slide tabs, from the UI guidelines: a block springs between equal tabs. On the shell they stay black in both themes. */
+.tabs{position:relative; display:inline-grid; grid-auto-flow:column; grid-auto-columns:88px; padding:4px; background:transparent; border:1px solid var(--head-ink); border-radius:6px}
+.ind{position:absolute; top:4px; left:4px; width:calc((100% - 8px) / 3); height:calc(100% - 8px); background:var(--head-ink); border-radius:4px; transform:translateX(calc(100% * var(--i, 0))); transition:transform .26s var(--spring)}
 .tabs:not(:has([aria-selected="true"])) .ind{display:none} /* Quest sits outside the tabs */
-.tab{position:relative; min-height:44px; padding:0; border:0; border-radius:4px; background:none; color:var(--muted); font-family:var(--f-ui); font-size:13px; cursor:pointer}
-.tab:not([aria-selected="true"]):hover{color:var(--ink)}
-.tab[aria-selected="true"]{color:var(--on-ink)}
-.tab:focus-visible{outline-color:var(--blue); outline-offset:0}
+.tab{position:relative; min-height:44px; padding:0; border:0; border-radius:4px; background:none; color:var(--head-ink); font-family:var(--f-ui); font-size:13px; cursor:pointer}
+.tab:not([aria-selected="true"]):hover{background:var(--head-hover)}
+.tab[aria-selected="true"]{color:var(--head-on)}
+.tab:focus-visible{outline-offset:-5px}
+.tab[aria-selected="true"]:focus-visible{outline-color:var(--head-on)}
 /* L and R: 44 px target, the key is the visible part */
 .keybtn{min-width:44px; min-height:44px; padding:0; display:inline-flex; align-items:center; justify-content:center; background:none; border:0; border-radius:6px; cursor:pointer}
 .keybtn:hover{background:var(--head-hover)}
-.key{width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; border-radius:4px; background:var(--ink); color:var(--on-ink); font-family:var(--f-pixel); font-size:16px; -webkit-font-smoothing:none; transition:transform .16s var(--spring)}
+.key{width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; border-radius:4px; background:var(--head-ink); color:var(--head-on); font-family:var(--f-pixel); font-size:16px; -webkit-font-smoothing:none; transition:transform .16s var(--spring)}
 .keybtn:active .key{transform:translateY(2px) scale(.97,.94); transition-duration:.08s}
 .syncpill{min-height:44px; padding:0 10px; border:0; background:transparent; color:var(--head-ink); font:inherit; font-size:12px; cursor:pointer; display:flex; align-items:center; gap:8px}
 .syncpill i{width:8px; height:8px; background:var(--head-ink)} .syncpill.busy i{animation:blink .6s steps(2,end) infinite} .syncpill.bad i{background:none; box-shadow:inset 0 0 0 2px var(--head-ink)}
@@ -72,18 +74,6 @@ svg.px{display:block; shape-rendering:crispEdges}
 @media (max-width:1040px){ .syncpill:not(.bad):not(.off) #syncText,.head .lbl{display:none} .head .btn.primary{padding:0 9px} .head .in{gap:8px} .head .appname{margin-right:0} }
 .head .in > .syncpill{flex:0 1 auto; min-width:0} #syncText{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 @media (min-width:601px) and (max-width:760px){ .head .in{flex-wrap:wrap; row-gap:0; padding-bottom:8px} .keybtn,.tabs{order:5} }
-/* Phone width: one header row, tabs along the bottom under the thumb, New block floats with its label. */
-@media (max-width:600px){
-  .head .in{min-height:56px; padding:0 8px 0 16px}
-  .head .appname{font-size:24px}
-  .keybtn{display:none}
-  .tabs{position:fixed; left:0; right:0; bottom:0; z-index:25; grid-auto-columns:1fr; border:0; border-top:2px solid var(--head-ink); border-radius:0}
-  #views{margin-bottom:60px}
-  .view{padding:12px 12px 76px}
-  .head #newBlock{position:fixed; right:12px; bottom:72px; z-index:25; padding:0 14px 0 10px}
-  .head #newBlock .lbl{display:inline}
-  .toast{bottom:132px}
-}
 @keyframes blink{50%{opacity:0}}
 /* Every press moves. Buttons with a drop have their own rule. */
 .tab,.subtab,.seg button,.menu button,.tick,.q-rail,.mday,.mchip,.mmore{transition:transform .16s var(--spring)}
@@ -116,7 +106,8 @@ label.field{display:grid; gap:4px; font-size:12px; color:var(--muted)}
 label.field :is(input,select,textarea){font-size:14px}
 ::placeholder{color:var(--muted); opacity:1}
 /* These clip their children, so the ring sits inside. */
-.seg button:focus-visible,.blk :focus-visible{outline-offset:-3px}
+.seg button:focus-visible,.blk :focus-visible,.mday:focus-visible,.mchip:focus-visible,.mmore:focus-visible{outline-offset:-3px}
+.seg button[aria-pressed="true"]:focus-visible{outline-color:var(--on-ink)}
 
 .state{display:flex; flex-direction:column; align-items:center; text-align:center; gap:10px; padding:32px 16px; color:var(--muted)}
 .state b{font-family:var(--f-pixel); font-weight:400; font-size:16px; color:var(--ink); -webkit-font-smoothing:none}
@@ -162,11 +153,24 @@ dialog .sheet-actions{position:sticky; bottom:-20px; z-index:1; margin:16px -20p
 .bubbles{position:fixed; inset:0; z-index:45; pointer-events:none; overflow:hidden; color:var(--ink)}
 .bub{position:absolute; display:block; shape-rendering:crispEdges}
 .bubdog{position:fixed; right:16px; bottom:16px; z-index:46; width:112px; height:112px; background:var(--raised); border:1px solid var(--frame); box-shadow:0 2px 0 var(--frame); border-radius:6px; display:flex; align-items:flex-end; justify-content:center; padding-bottom:8px; pointer-events:none; transform:translateY(144px)}
-.bubdog.in{animation:bubin .24s steps(3,end) forwards}
-.bubdog.out{animation:bubout .24s steps(3,end) forwards}
+.bubdog.in{transform:none; animation:bubin .24s steps(3,end) forwards} /* resting there, so he still shows with motion off */
+.bubdog.out{transform:translateY(144px); animation:bubout .24s steps(3,end) forwards}
 @keyframes bubin{from{transform:translateY(144px)} to{transform:none}}
 @keyframes bubout{from{transform:none} to{transform:translateY(144px)}}
 .bubdog.chomp svg{animation:bubchomp .16s steps(2,end)}
 @keyframes bubchomp{50%{transform:translateY(-16px)}}
 .spark{position:fixed; width:8px; height:8px; margin:-4px 0 0 -4px; background:var(--tan); pointer-events:none; z-index:47; animation:spark .42s steps(4,end) forwards}
 @keyframes spark{to{transform:translate(var(--dx),var(--dy))}}
+
+/* Phone width: one header row, tabs along the bottom under the thumb, New block floats with its label. Last, so it beats the base rules. */
+@media (max-width:600px){
+  .head .in{min-height:56px; padding:0 8px 0 16px}
+  .head .appname{font-size:24px}
+  .keybtn{display:none}
+  .tabs{position:fixed; left:0; right:0; bottom:0; z-index:25; grid-auto-columns:1fr; background:var(--shell); border:0; border-top:2px solid var(--head-ink); border-radius:0}
+  #views{margin-bottom:54px}
+  .view{padding:12px 12px 76px}
+  .head #newBlock{position:fixed; right:12px; bottom:72px; z-index:25; padding:0 14px 0 10px}
+  .head #newBlock .lbl{display:inline}
+  .toast{bottom:148px; transform:translate(-50%,260px)} /* clears New block and the tabs, and still rests off screen */
+}

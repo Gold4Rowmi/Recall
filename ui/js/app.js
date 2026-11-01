@@ -44,7 +44,7 @@ export function go(name){
   if (from){ // the page comes in from the side you moved toward
     SFX.swish();
     const dx = ORDER.indexOf(name) > ORDER.indexOf(from) ? 24 : -24;
-    if (!matchMedia('(prefers-reduced-motion:reduce)').matches) mounted[name].animate([{ transform:`translateX(${dx}px)`, opacity:0 }, { transform:'none', opacity:1 }], { duration:260, easing:'cubic-bezier(.2,.8,.2,1)' });
+    if (!matchMedia('(prefers-reduced-motion:reduce)').matches && document.documentElement.dataset.motion !== 'off') mounted[name].animate([{ transform:`translateX(${dx}px)`, opacity:0 }, { transform:'none', opacity:1 }], { duration:260, easing:'cubic-bezier(.2,.8,.2,1)' });
   }
   setTimeout(() => localStorage.setItem('recall.view', name)); // never on the click path
 }
