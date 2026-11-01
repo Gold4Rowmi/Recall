@@ -55,6 +55,9 @@ export const SFX = {
   chomp:   () => blip(220, 0.04, { duty:50, vol:10 }),
   pop:     () => { blip(2637, 0.02, { duty:12, vol:6 }); tap(0.01, 4); },
   woof:    () => { blip(392, 0.06, { duty:50, vol:10 }); blip(262, 0.08, { duty:50, vol:10, at:0.06 }); },
+  swish:   () => { if (muted) return; const c = audio(); if (!c) return; const n = Math.floor(c.sampleRate * 0.14), b = c.createBuffer(1, n, c.sampleRate), d = b.getChannelData(0); for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+    const s = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain(), t = c.currentTime; s.buffer = b; f.type = 'bandpass'; f.Q.value = 1.4; f.frequency.setValueAtTime(500, t); f.frequency.exponentialRampToValueAtTime(3200, t + 0.13);
+    g.gain.setValueAtTime(0.06, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.14); s.connect(f); f.connect(g); g.connect(c.destination); s.start(t); },
   startup: () => { [0, .11, .22, .33].forEach((t, i) => tap(t, 5 + i)); blip(784, 0.09, { duty:50, vol:12, at:.42, fade:false }); blip(1047, 0.55, { duty:50, vol:13, at:.51 }); }
 };
 // Every press answers: one capture listener, so no button can be missed

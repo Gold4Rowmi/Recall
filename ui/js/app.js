@@ -29,6 +29,7 @@ const schedule = () => { if (!frame) frame = requestAnimationFrame(paint); };
 export function go(name){
   if (name === current) return;
   closeMenu();
+  const from = current;
   if (current){ mounted[current].hidden = true; VIEWS[current].onHide?.(); }
   current = name;
   if (!mounted[name]){
@@ -37,8 +38,14 @@ export function go(name){
   }
   mounted[name].hidden = false;
   document.querySelectorAll('.tab').forEach(t => t.setAttribute('aria-selected', t.dataset.view === name));
+  $('tabs').style.setProperty('--i', ORDER.indexOf(name));
   VIEWS[name].onShow?.();
   paint();
+  if (from){ // the page comes in from the side you moved toward
+    SFX.swish();
+    const dx = ORDER.indexOf(name) > ORDER.indexOf(from) ? 24 : -24;
+    if (!matchMedia('(prefers-reduced-motion:reduce)').matches) mounted[name].animate([{ transform:`translateX(${dx}px)`, opacity:0 }, { transform:'none', opacity:1 }], { duration:260, easing:'cubic-bezier(.2,.8,.2,1)' });
+  }
   setTimeout(() => localStorage.setItem('recall.view', name)); // never on the click path
 }
 export const invalidate = (...names) => { (names.length ? names : Object.keys(VIEWS)).forEach(n => dirty.add(n)); schedule(); };
@@ -65,7 +72,7 @@ function wire(){
   $('moreBtn').onclick = e => menu(e.currentTarget, [
     { label:'Quest', run:() => go('quest') }, { label:'Follow-ups', run:openFollowUps }, { label:'Export week', run:exportWeek }, { label:'Settings', run:openSettings },
   ]);
-  const shift = n => go(ORDER[(Math.max(ORDER.indexOf(current), 0) + n + 3) % 3]);
+  const shift = n => { const i = ORDER.indexOf(current), to = i < 0 ? 0 : i + n; if (ORDER[to]) go(ORDER[to]); else SFX.error(); }; // the ends stop, they don't wrap
   $('tabL').onclick = () => shift(-1);
   $('tabR').onclick = () => shift(1);
   // Console feel: L R switch tabs, arrows move, A opens, B or Esc goes back. 1 2 3 jump.
@@ -97,8 +104,8 @@ function wire(){
       e.preventDefault(); items[next].focus(); SFX.tick();
     } else if (sheetOpen) return;
     else if (['1','2','3'].includes(key)){ SFX.tick(); go(ORDER[+key - 1]); }
-    else if ((key === 'l' && !wasTyping) || key === '['){ SFX.tick(); shift(-1); }
-    else if (key === 'r' || key === ']'){ SFX.tick(); shift(1); }
+    else if ((key === 'l' && !wasTyping) || key === '[') shift(-1);
+    else if (key === 'r' || key === ']') shift(1);
     else if (key === 'arrowleft' || key === 'arrowright') SFX.tick(); // Today steps the date, Command moves its sub-tab
     else if (key === 'escape' && current === 'quest'){ SFX.back(); go('today'); }
   });

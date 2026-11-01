@@ -52,30 +52,32 @@ svg.px{display:block; shape-rendering:crispEdges}
 .head .btn.primary{background:var(--head-ink); color:var(--head-on); border-color:var(--head-ink)}
 .head .btn:not(.primary):hover{background:var(--head-hover)}
 .head :focus-visible{outline-color:var(--head-ink)} /* Cursor Blue would vanish on the blue shell */
-.tabs{display:flex; gap:4px}
-.tab{min-height:44px; padding:0 14px; border:1px solid transparent; border-radius:6px; background:transparent; color:var(--head-ink); font:inherit; font-family:var(--f-pixel); font-size:16px; -webkit-font-smoothing:none; cursor:pointer}
-.tab[aria-selected="true"]{background:var(--head-ink); color:var(--head-on)}
-.tab:not([aria-selected="true"]):hover{border-color:var(--head-ink)}
-/* L and R shoulder buttons: 44 px target, the cap is the visible part */
-.shoulder{width:44px; height:44px; padding:0; display:inline-grid; place-items:center; background:none; border:0; color:var(--head-ink); cursor:pointer; margin:0 -6px}
-.shoulder span{display:block; width:36px; height:26px; line-height:22px; text-align:center; font-size:16px; border:2px solid var(--head-ink); box-shadow:0 2px 0 var(--head-ink); border-radius:12px 4px 4px 4px; transition:transform .16s var(--spring), box-shadow .1s}
-.shoulder.right span{border-radius:4px 12px 4px 4px}
-.shoulder:hover span{background:var(--head-hover)}
-.shoulder:active span{transform:translateY(2px); box-shadow:none; transition-duration:.08s}
+/* Page slide tabs, from the UI guidelines: an ink block springs between equal tabs in a raised tray */
+.tabs{position:relative; display:inline-grid; grid-auto-flow:column; grid-auto-columns:88px; padding:4px; background:var(--raised); border:1px solid var(--frame); border-radius:6px}
+.ind{position:absolute; top:4px; left:4px; width:calc((100% - 8px) / 3); height:calc(100% - 8px); background:var(--ink); border-radius:4px; transform:translateX(calc(100% * var(--i, 0))); transition:transform .26s var(--spring)}
+.tabs:not(:has([aria-selected="true"])) .ind{display:none} /* Quest sits outside the tabs */
+.tab{position:relative; min-height:44px; padding:0; border:0; border-radius:4px; background:none; color:var(--muted); font-family:var(--f-ui); font-size:13px; cursor:pointer}
+.tab:not([aria-selected="true"]):hover{color:var(--ink)}
+.tab[aria-selected="true"]{color:var(--on-ink)}
+.tab:focus-visible{outline-color:var(--blue); outline-offset:0}
+/* L and R: 44 px target, the key is the visible part */
+.keybtn{min-width:44px; min-height:44px; padding:0; display:inline-flex; align-items:center; justify-content:center; background:none; border:0; border-radius:6px; cursor:pointer}
+.keybtn:hover{background:var(--head-hover)}
+.key{width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; border-radius:4px; background:var(--ink); color:var(--on-ink); font-family:var(--f-pixel); font-size:16px; -webkit-font-smoothing:none; transition:transform .16s var(--spring)}
+.keybtn:active .key{transform:translateY(2px) scale(.97,.94); transition-duration:.08s}
 .syncpill{min-height:44px; padding:0 10px; border:0; background:transparent; color:var(--head-ink); font:inherit; font-size:12px; cursor:pointer; display:flex; align-items:center; gap:8px}
 .syncpill i{width:8px; height:8px; background:var(--head-ink)} .syncpill.busy i{animation:blink .6s steps(2,end) infinite} .syncpill.bad i{background:none; box-shadow:inset 0 0 0 2px var(--head-ink)}
 .syncpill:hover{text-decoration:underline}
 /* The minimum window is 900 wide: labels go first, then the tabs take their own row. */
-@media (max-width:1040px){ .syncpill:not(.bad):not(.off) #syncText,.head .lbl{display:none} .head .btn.primary{padding:0 9px} .head .in{gap:8px} .head .appname{margin-right:0} .tab{padding:0 8px} }
+@media (max-width:1040px){ .syncpill:not(.bad):not(.off) #syncText,.head .lbl{display:none} .head .btn.primary{padding:0 9px} .head .in{gap:8px} .head .appname{margin-right:0} }
 .head .in > .syncpill{flex:0 1 auto; min-width:0} #syncText{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
-@media (min-width:601px) and (max-width:760px){ .head .in{flex-wrap:wrap; row-gap:0; padding-bottom:8px} .shoulder,.tabs{order:5} .tab{padding:0 8px} }
+@media (min-width:601px) and (max-width:760px){ .head .in{flex-wrap:wrap; row-gap:0; padding-bottom:8px} .keybtn,.tabs{order:5} }
 /* Phone width: one header row, tabs along the bottom under the thumb, New block floats with its label. */
 @media (max-width:600px){
   .head .in{min-height:56px; padding:0 8px 0 16px}
   .head .appname{font-size:24px}
-  .shoulder{display:none}
-  .tabs{position:fixed; left:0; right:0; bottom:0; z-index:25; height:60px; padding:8px; background:var(--shell); border-top:2px solid var(--head-ink)}
-  .tab{flex:1; padding:0 4px}
+  .keybtn{display:none}
+  .tabs{position:fixed; left:0; right:0; bottom:0; z-index:25; grid-auto-columns:1fr; border:0; border-top:2px solid var(--head-ink); border-radius:0}
   #views{margin-bottom:60px}
   .view{padding:12px 12px 76px}
   .head #newBlock{position:fixed; right:12px; bottom:72px; z-index:25; padding:0 14px 0 10px}
