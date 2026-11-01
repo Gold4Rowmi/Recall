@@ -59,8 +59,8 @@ function mount(el){
   cal.addEventListener('pointerdown', onCalDown);
   queueEl.addEventListener('pointerdown', onQueueDown);
   drawer.addEventListener('pointerdown', onQueueDown);
-  el.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.blk,.mchip')){ e.preventDefault(); openEditor(store.get('tasks', e.target.dataset.id)); } });
-  addEventListener('keydown', e => { if (el.hidden || document.querySelector('dialog[open]') || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return; if (e.key === 'ArrowLeft'){ SFX.tick(); step(-1); } else if (e.key === 'ArrowRight'){ SFX.tick(); step(1); } else if (e.key === 'Escape' && S.drawer){ SFX.back(); setDrawer(null); } });
+  el.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.matches('.blk,.mchip')){ e.preventDefault(); openEditor(store.get('tasks', e.target.dataset.id)); } });
+  addEventListener('keydown', e => { if (el.hidden || document.querySelector('dialog[open], .menu') || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return; if (e.key === 'ArrowLeft'){ SFX.tick(); step(-1); } else if (e.key === 'ArrowRight'){ SFX.tick(); step(1); } else if (e.key === 'Escape' && S.drawer){ SFX.back(); setDrawer(null); } });
   addEventListener('recall:drawer', e => setDrawer(e.detail));
   quest.mountRail?.($(el, '#questRail'));
   const cue = () => { $(rail, '.railcue').hidden = rail.scrollHeight - rail.clientHeight - rail.scrollTop <= 16; };
@@ -148,7 +148,7 @@ function renderGrid(){
       el.dataset.sig = sig; el.classList.toggle('isdone', done); el.classList.toggle('short', t.duration_minutes <= SLOT);
       el.style.cssText = `top:${yOf(t.start_minute)}px;height:${t.duration_minutes * PX - 2}px;left:calc(${lane * 100 / of}% + 2px);width:calc(${100 / of}% - 4px);--c:${c}`;
       el.title = `${t.title}, ${fmtClock(t.start_minute)}, ${fmtDuration(t.duration_minutes)}`;
-      el.innerHTML = `<button class="tick" type="button" data-act="done" aria-label="Mark ${esc(t.title)} ${done ? 'not done' : 'done'}">${done ? icon('check') : ''}</button><span class="tx"><span class="tt">${esc(t.title)}</span><span class="tm">${fmtClock(t.start_minute)}${p ? ' · ' + p : ''}</span></span><button class="more" type="button" data-act="more" aria-label="More for ${esc(t.title)}">${icon('more')}</button><i class="rz"></i>`;
+      el.innerHTML = `<button class="tick" type="button" data-act="done" aria-label="Mark ${esc(t.title)} ${done ? 'not done' : 'done'}">${done ? icon('check') : ''}</button><span class="tx"><span class="tt">${esc(t.title)}</span><span class="tm">${fmtClock(t.start_minute)}${p ? ' · ' + p : ''}</span></span><button class="more" type="button" data-act="more" data-x aria-label="More for ${esc(t.title)}">${icon('more')}</button><i class="rz"></i>`;
     }
   }
   for (const [id, el] of blocks) if (!seen.has(id)){ el.remove(); blocks.delete(id); }
@@ -169,7 +169,7 @@ function renderMonth(){
 function queueRow(t){
   const who = person(t.assigned_person_id)?.display_name, p = priorityLabel(t.priority_hint);
   return `<div class="qrow" data-qid="${esc(t.id)}"><span class="qdrag" aria-hidden="true"></span><span class="qtext"><span class="clip">${esc(t.title)}</span><span class="small muted clip">${[fmtDuration(t.duration_minutes), who, p].filter(Boolean).map(esc).join(' · ')}</span></span>
-    <span class="qacts"><button class="btn" type="button" data-act="qplan" title="Schedule in the next free slot">Schedule</button><button class="btn icon" type="button" data-act="qdel" data-sfx="back" aria-label="Delete" title="Remove from Queue. Undo is available.">${icon('trash')}</button><button class="btn icon" type="button" data-act="qmore" aria-label="More">${icon('more')}</button></span></div>`;
+    <span class="qacts"><button class="btn" type="button" data-act="qplan" title="Schedule in the next free slot">Schedule</button><button class="btn icon" type="button" data-act="qdel" data-sfx="back" data-x aria-label="Delete" title="Remove from Queue. Undo is available.">${icon('trash')}</button><button class="btn icon" type="button" data-act="qmore" aria-label="More">${icon('more')}</button></span></div>`;
 }
 function renderQueue(){
   if (!ready()) return write(queueEl, `<div class="qhead"><h2>Unscheduled work</h2></div><p class="muted small qempty">${DASH}</p>`);

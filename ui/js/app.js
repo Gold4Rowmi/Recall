@@ -2,7 +2,9 @@
 import { initBrand, boot, toast, react, setRestPose, setMuted, SFX } from './brand.js';
 import * as store from './store.js';
 import * as sync from './sync.js';
-import { menu, closeMenu, launchbar, isTextEntry } from './ui.js';
+import { menu, closeMenu, launchbar, isTextEntry, slide, ITEMS } from './ui.js';
+import { initCursor } from './cursor.js';
+import { startPad } from './gamepad.js';
 import { onSnapshot } from './insights.js';
 import today from './views/today.js';
 import brief from './views/brief.js';
@@ -41,11 +43,7 @@ export function go(name){
   $('tabs').style.setProperty('--i', ORDER.indexOf(name));
   VIEWS[name].onShow?.();
   paint();
-  if (from){ // the page comes in from the side you moved toward
-    SFX.swish();
-    const dx = ORDER.indexOf(name) > ORDER.indexOf(from) ? 24 : -24;
-    if (!matchMedia('(prefers-reduced-motion:reduce)').matches && document.documentElement.dataset.motion !== 'off') mounted[name].animate([{ transform:`translateX(${dx}px)`, opacity:0 }, { transform:'none', opacity:1 }], { duration:260, easing:'cubic-bezier(.2,.8,.2,1)' });
-  }
+  if (from){ SFX.swish(); slide(mounted[name], ORDER.indexOf(name) > ORDER.indexOf(from) ? 24 : -24); }
   setTimeout(() => localStorage.setItem('recall.view', name)); // never on the click path
 }
 export const invalidate = (...names) => { (names.length ? names : Object.keys(VIEWS)).forEach(n => dirty.add(n)); schedule(); };
@@ -76,7 +74,7 @@ function wire(){
   const shift = n => { const i = ORDER.indexOf(current), to = i < 0 ? 0 : i + n; if (ORDER[to]) go(ORDER[to]); else SFX.error(); }; // the ends stop, they don't wrap
   $('tabL').onclick = () => shift(-1);
   $('tabR').onclick = () => shift(1);
-  // Console feel: L R switch tabs, arrows move, A opens, B or Esc goes back. 1 2 3 jump.
+  // Console feel: L R switch tabs, arrows move, A opens, B or Esc goes back, X acts on the item, Y is Settings. 1 2 3 jump.
   const topSheet = () => [...document.querySelectorAll('dialog[open]')].pop(); // a confirm opens above the sheet that asked for it
   const scope = () => topSheet() || document.querySelector('.menu') || mounted[current];
   const back = () => { const d = topSheet();
@@ -86,29 +84,40 @@ function wire(){
     else { SFX.tick(); document.dispatchEvent(new KeyboardEvent('keydown', { key:'Escape', bubbles:true })); } }; // Today closes its drawer on this
   let typed = '', backT = 0;
   addEventListener('keydown', e => {
-    if (isTextEntry(e.target) || e.ctrlKey || e.metaKey || e.altKey) return;
-    const key = e.key.toLowerCase(), wasTyping = typed === 'bubb', sheetOpen = !!document.querySelector('dialog[open]');
+    const sheetOpen = !!document.querySelector('dialog[open]');
+    if (e.ctrlKey && current && !sheetOpen && (e.key === 'Tab' || e.key === ',')){ e.preventDefault(); e.key === ',' ? openSettings() : shift(e.shiftKey ? -1 : 1); return; } // browsers keep Ctrl+Tab for themselves
+    if (isTextEntry(e.target) || e.ctrlKey || e.metaKey || e.altKey || e.defaultPrevented) return;
+    const key = e.key.toLowerCase(), wasTyping = typed === 'bubb', menuOpen = !!document.querySelector('.menu');
     clearTimeout(backT); // b waits a beat: if another key follows, it was the word bubbles
     typed = (typed + key).slice(-4);
-    if (e.repeat && key.length === 1) return;
+    if (e.repeat && (key.length === 1 || key === 'enter' || key === 'delete')) return;
     if (!current){ if (key === 'a' && !$('login').hidden) $('loginForm').requestSubmit(); return; } // signed out: nothing to move through yet
-    if (key === 'b'){ backT = setTimeout(back, 250); return; }
-    if (key === 'a'){
+    if (key === 'b'){ backT = setTimeout(back, e.isTrusted ? 250 : 0); return; } // a controller's B can't be the start of a word
+    if (key === 'a' || key === 'enter'){
       const f = document.activeElement;
-      if (f?.tagName === 'SELECT'){ e.preventDefault(); f.showPicker?.(); return; }
+      if (f?.tagName === 'SELECT'){ e.preventDefault(); try { f.showPicker?.(); } catch {} return; } // a controller press doesn't count as a user gesture
       const hit = f?.matches('button, a, [role="button"], input[type="checkbox"]') ? f : [...scope().querySelectorAll('.btn.primary')].find(b => b.getClientRects().length) || (!sheetOpen && current === 'today' ? $('newBlock') : null); // New block is Today's main action
       if (hit){ e.preventDefault(); hit.click(); }
-    } else if (key === 'arrowdown' || key === 'arrowup'){
-      const items = [...scope().querySelectorAll('button:not(:disabled), a[href], [role="button"], input:not([type="hidden"]), select, textarea')].filter(b => b.getClientRects().length);
+    } else if (key === 'x' || key === 'delete' || key === ' '){ // a focused control with no item action keeps its native Space
+      const f = document.activeElement, x = f?.matches('[data-x]') ? f : f?.closest('.blk,.qrow')?.querySelector('[data-x]');
+      if (x){ e.preventDefault(); x.click(); }
+    } else if (key === 'arrowdown' || key === 'arrowup' || ((key === 'arrowleft' || key === 'arrowright') && (sheetOpen || menuOpen || current === 'brief' || current === 'quest'))){ // on Today and Command, left and right belong to the view
+      const items = [...scope().querySelectorAll(ITEMS)].filter(b => b.getClientRects().length);
       if (!items.length) return;
-      const at = items.indexOf(document.activeElement), next = at < 0 ? 0 : Math.min(items.length - 1, Math.max(0, at + (key === 'arrowdown' ? 1 : -1)));
+      const at = items.indexOf(document.activeElement), next = at < 0 ? 0 : Math.min(items.length - 1, Math.max(0, at + (key === 'arrowdown' || key === 'arrowright' ? 1 : -1)));
       e.preventDefault(); items[next].focus(); SFX.tick();
     } else if (sheetOpen) return;
-    else if (['1','2','3'].includes(key)){ SFX.tick(); go(ORDER[+key - 1]); }
+    else if (['1','2','3'].includes(key)){ const to = ORDER[+key - 1]; if (to === current) SFX.tick(); else go(to); }
     else if ((key === 'l' && !wasTyping) || key === '[') shift(-1);
     else if (key === 'r' || key === ']') shift(1);
-    else if (key === 'arrowleft' || key === 'arrowright') SFX.tick(); // Today steps the date, Command moves its sub-tab
+    else if (key === 'y') openSettings();
     else if (key === 'escape' && current === 'quest'){ SFX.back(); go('today'); }
+  });
+  const KEYS = { a:'a', b:'b', x:'x', y:'y', l:'l', r:'r', up:'ArrowUp', down:'ArrowDown', left:'ArrowLeft', right:'ArrowRight' };
+  startPad(act => {
+    if (act === 'start'){ if (!$('newBlock').hidden && !document.querySelector('dialog[open]')) $('newBlock').click(); return; }
+    const f = document.activeElement; // the same handlers as the keyboard; a text field would swallow the key, so it goes past it
+    (!f || isTextEntry(f) ? document.body : f).dispatchEvent(new KeyboardEvent('keydown', { key:KEYS[act], bubbles:true, cancelable:true }));
   });
   addEventListener('click', () => requestAnimationFrame(rest)); // sub-tabs and sheets can reveal a different state
   onSnapshot(() => requestAnimationFrame(rest));
@@ -139,7 +148,7 @@ async function checkUpdate(){
 
 (async function main(){
   setMuted(localStorage.getItem('recall.muted') === '1'); // before boot: the store isn't open yet
-  initBrand(); boot(); wire();
+  initBrand(); boot(); wire(); initCursor();
   $('loading').innerHTML = launchbar();
   const demo = new URLSearchParams(location.search).has('demo');
   await store.open(demo);

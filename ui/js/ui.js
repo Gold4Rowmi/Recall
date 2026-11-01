@@ -8,6 +8,11 @@ export const icon = (name, size = 16) => `<svg class="px" width="${size}" height
 export const launchbar = () => '<div class="launchbar" aria-label="Loading">' + Array.from({ length:10 }, (_, i) => `<i style="--i:${i}"></i>`).join('') + '</div>';
 // Typing keeps its keys; every other control takes the console keys.
 export const isTextEntry = t => !!t && (t.isContentEditable || t.tagName === 'TEXTAREA' || (t.tagName === 'INPUT' && !/^(checkbox|radio|color|range|button)$/.test(t.type)));
+// What the arrows and the selection brackets can land on.
+export const ITEMS = 'button:not(:disabled), a[href], [role="button"], input:not([type="hidden"]), select, textarea';
+export function slide(el, dx){ // a page comes in from the side you moved toward
+  if (!matchMedia('(prefers-reduced-motion:reduce)').matches && document.documentElement.dataset.motion !== 'off') el.animate([{ transform:`translateX(${dx}px)`, opacity:0 }, { transform:'none', opacity:1 }], { duration:260, easing:'cubic-bezier(.2,.8,.2,1)' });
+}
 // One Rommel per screen: a state hands its pose to the header dog through data-rest. action is optional button HTML.
 export function stateBlock(pose, title, text, action = ''){
   return `<div class="state" data-rest="${pose}"><b>${esc(title)}</b><span>${esc(text)}</span>${action}</div>`;
@@ -36,7 +41,8 @@ export const confirmSheet = (title, text, label, danger = true, cancelLabel = 'K
 });
 
 // Shown in Settings so no control is secret.
-export const SHORTCUTS = [['L or R', 'Previous or next tab'], ['1 2 3', 'Today, Brief, Command'], ['Arrows', 'Move'], ['A or Enter', 'Open'], ['B or Esc', 'Back']];
+export const SHORTCUTS = [['L or R', 'Previous or next tab'], ['Ctrl + Tab', 'Next tab, desktop app only'], ['1 2 3', 'Today, Brief, Command'], ['Arrows', 'Move the selection'], ['A or Enter', 'Open'], ['B or Esc', 'Back'],
+  ['X, Del or Space', 'Delete or more options for the selected item'], ['Y or Ctrl + ,', 'Settings'], ['Controller', 'A B X Y, D-pad or stick, shoulders for tabs, Start for New block']];
 
 let dropMenu = null;
 export const closeMenu = () => dropMenu?.();

@@ -1,7 +1,7 @@
 // Command: manage. All five panels stay mounted; a sub-tab change flips `hidden`, never recomputes.
-import { toast } from '../brand.js';
+import { toast, SFX } from '../brand.js';
 import { newTask } from '../tasks.js';
-import { esc, fill, stateBlock } from '../ui.js';
+import { esc, fill, stateBlock, slide } from '../ui.js';
 import { fmtDate } from '../time.js';
 import { cap } from '../analytics.js';
 import * as insights from '../insights.js';
@@ -57,16 +57,19 @@ export default {
       else if ('today' in b.dataset) window.dispatchEvent(new CustomEvent('recall:go', { detail:'today' }));
     });
     el.querySelector('[data-filter]').addEventListener('input', () => this.renderTeam());
-    addEventListener('keydown', e => { if (el.hidden || document.querySelector('dialog[open]') || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || !['ArrowLeft', 'ArrowRight'].includes(e.key)) return;
-      const i = PANELS.findIndex(p => p[0] === this.active), next = PANELS[(i + (e.key === 'ArrowLeft' ? 4 : 1)) % 5][0]; this.show(next); el.querySelector(`[data-sub="${next}"]`).focus(); });
+    addEventListener('keydown', e => { if (el.hidden || document.querySelector('dialog[open], .menu') || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || !['ArrowLeft', 'ArrowRight'].includes(e.key)) return;
+      const i = PANELS.findIndex(p => p[0] === this.active), next = PANELS[i + (e.key === 'ArrowLeft' ? -1 : 1)]?.[0]; if (!next) return SFX.error(); // the ends stop, they don't wrap
+      this.show(next); el.querySelector(`[data-sub="${next}"]`).focus(); });
     insights.onSnapshot(() => { if (!el.hidden) this.render(); });
     this.show(this.active);
   },
   show(key){
     if (this.current === key) return;
-    if (this.current) this.panels[this.current].hidden = true;
+    const from = this.current, order = PANELS.map(p => p[0]);
+    if (from) this.panels[from].hidden = true;
     this.current = this.active = key;
     this.panels[key].hidden = false; this.restore();
+    if (from){ SFX.swish(); slide(this.panels[key], order.indexOf(key) > order.indexOf(from) ? 24 : -24); }
     this.el.querySelectorAll('.subtab').forEach(t => t.setAttribute('aria-selected', t.dataset.sub === key));
   },
   restore(){ const y = this.scroll[this.current]; if (y) this.panels[this.current].scrollTop = y; }, // skip at 0: setting it forces layout

@@ -61,7 +61,7 @@ export const SFX = {
   startup: () => { [0, .11, .22, .33].forEach((t, i) => tap(t, 5 + i)); blip(784, 0.09, { duty:50, vol:12, at:.42, fade:false }); blip(1047, 0.55, { duty:50, vol:13, at:.51 }); }
 };
 // Every press answers: one capture listener, so no button can be missed
-document.addEventListener('click', e => { const b = e.target.closest('button, [role="button"], label.btn, a.btn, .col'); if (!b || b.closest('#boot')) return;
+document.addEventListener('click', e => { const b = e.target.closest('button, [role="button"], label.btn, a.btn, .col'); if (!b || b.closest('#boot') || b.matches('.tab,.subtab,.keybtn')) return; // those answer with a swish or a buzz
   if (b.classList.contains('primary')) SFX.confirm(); else if (b.dataset.sfx) SFX[b.dataset.sfx](); else if (b.closest('dialog') && /^(cancel|close)$/i.test(b.textContent.trim())) SFX.back(); else SFX.tick(); }, true);
 // Checkboxes, selects, colours and dates answer when they change; text fields would tick on every blur.
 document.addEventListener('change', e => { if (!e.target.matches('textarea, input:not([type]), input[type="text"], input[type="email"], input[type="password"]')) SFX.tick(); }, true);

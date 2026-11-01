@@ -41,7 +41,7 @@ export function renderFollowUps(el){
       <button class="tick big" type="button" data-fu="done" aria-pressed="${!!r.completed_at}" aria-label="Mark done">${r.completed_at ? icon('check') : ''}</button>
       <span class="qtext">${esc(r.title)}</span>
       <select aria-label="Assigned to">${personOptions(r.assigned_person_id)}</select>
-      <button class="btn" type="button" data-fu="queue">Queue</button><button class="btn danger-text" type="button" data-fu="del" data-sfx="back">Delete</button></div>`).join('')
+      <button class="btn" type="button" data-fu="queue">Queue</button><button class="btn danger-text" type="button" data-fu="del" data-sfx="back" data-x>Delete</button></div>`).join('')
     : stateBlock('sleepy', 'No follow-ups', 'Add anything you need to chase up.');
   if (list.dataset.html !== html){ list.dataset.html = html; fill(list, html); }
 }
