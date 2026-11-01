@@ -7,7 +7,7 @@ export const SUPABASE_URL = 'https://zyjnpfuuoekdjuaumvpi.supabase.co';
 const PUBLISHABLE_KEY = 'sb_publishable_o4HNFoCmwwcvxx6t0QxB8A_7E9s9tEy';
 const tauri = window.__TAURI__;
 
-// Tauri keeps the session in a DPAPI file; a plain browser (dev) falls back to localStorage.
+// Tauri keeps the session in a DPAPI file; the web app uses localStorage.
 const sessionStore = tauri ? {
   getItem: () => tauri.core.invoke('secret_get'),
   setItem: (_k, value) => tauri.core.invoke('secret_set', { value }),
