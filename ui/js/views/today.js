@@ -129,11 +129,11 @@ function renderGrid(){
   if (key !== gridKey){
     gridKey = key; range = [lo, hi]; blocks.clear(); cal._html = null;
     const hours = []; for (let h = lo; h < hi; h += 60) hours.push(`<i style="top:${yOf(h)}px">${fmtClock(h).replace(':00', '')}</i>`);
-    cal.className = 'cal grid';
+    cal.className = 'cal grid' + (dates.length > 1 ? ' week' : '');
     cal.innerHTML = `<div class="calhead" style="--cols:${dates.length}"><span></span>${dates.map(d => `<b class="${d === now ? 'isnow' : ''}">${esc(fmtDate(d, dates.length > 1 ? { weekday:'short', day:'numeric' } : { weekday:'long', day:'numeric' }))}</b>`).join('')}</div>
       <div class="calbody" style="--cols:${dates.length};--slot:${SLOT_PX}px;height:${yOf(hi)}px"><div class="gutter">${hours.join('')}</div>${dates.map(d => `<div class="col${d === now ? ' isnow' : ''}" data-date="${d}">${d === now ? '<div class="nowline"></div>' : ''}</div>`).join('')}</div>`;
     placeNow();
-    cal.scrollTop = Math.max(0, yOf(dates.includes(now) ? nowMinute() - 120 : 8 * 60));
+    cal.scrollTop = Math.max(0, yOf(dates.includes(now) ? openAt(now) : 8 * 60));
   }
   const seen = new Set();
   for (const d of dates){
@@ -155,6 +155,24 @@ function renderGrid(){
   for (const [id, el] of blocks) if (!seen.has(id)){ el.remove(); blocks.delete(id); }
 }
 function placeNow(){ const n = cal.querySelector('.nowline'); if (n) n.style.top = yOf(nowMinute()) + 'px'; }
+// Open two hours before now, unless that window is empty while today has blocks: then open on the one nearest now.
+function openAt(date){
+  const n = nowMinute(), from = n - 120, to = from + (cal.clientHeight || 400) / PX, tasks = P.dayTasks(date);
+  if (!tasks.length || tasks.some(t => t.start_minute < to && t.start_minute + t.duration_minutes > from)) return from;
+  return tasks.reduce((a, t) => Math.abs(t.start_minute - n) < Math.abs(a.start_minute - n) ? t : a).start_minute - 60;
+}
+// After a save or a schedule, show where the block went: move to its day, scroll it into view and mark it.
+// Store changes reach the day index in a microtask, so this runs after it.
+const reveal = id => queueMicrotask(() => queueMicrotask(() => revealNow(id)));
+function revealNow(id){
+  const t = store.get('tasks', id); if (!t?.local_date || !root || root.hidden) return;
+  if (S.mode === 'month' ? t.local_date.slice(0, 7) !== S.date.slice(0, 7) : !visibleDates().includes(t.local_date)) S.date = t.local_date;
+  render();
+  const el = blocks.get(id); if (!el) return;
+  const top = yOf(t.start_minute), bottom = top + t.duration_minutes * PX, head = 40;
+  if (top < cal.scrollTop || bottom > cal.scrollTop + cal.clientHeight - head) cal.scrollTop = Math.max(0, top - head - 24);
+  el.classList.remove('fresh'); void el.offsetWidth; el.classList.add('fresh');
+}
 
 function renderMonth(){
   gridKey = ''; blocks.clear();
@@ -232,7 +250,7 @@ function onClick(e){
     case 'retry': return syncNow();
     case 'done': return toggleDone(task);
     case 'more': return blockMenu(e.target.closest('button'), task);
-    case 'qplan': { const s = P.nextFree(task, today()); if (!s) return toast('No free slot in the next 30 days. Drag it onto the calendar instead.', 'error'); const undo = P.fromQueue(task.id, s.date, s.minute); return toast(`Scheduled ${fmtDate(s.date)}, ${fmtClock(s.minute)}.`, 'success', { label:'Undo', run:undo }); }
+    case 'qplan': { const s = P.nextFree(task, today()); if (!s) return toast('No free slot in the next 30 days. Drag it onto the calendar instead.', 'error'); const undo = P.fromQueue(task.id, s.date, s.minute); reveal(task.id); return toast(`Scheduled ${fmtDate(s.date)}, ${fmtClock(s.minute)}.`, 'success', { label:'Undo', run:undo }); }
     case 'qdel': return toast('Removed from Queue.', null, { label:'Undo', run:P.deleteTask(task.id) });
     case 'qmore': return menu(e.target.closest('button'), [{ label:'Edit', run:() => openEditor(task) }, ...priorityItems(task)]);
     case 'slot': { const n = +e.target.closest('[data-slot]').dataset.slot, list = P.dayTasks(today()).filter(t => !isDone(t)); if (!list.length) return toast('Add a block today first.'); return menu(e.target.closest('button'), list.slice(0, 10).map(t => ({ label:t.title, run:() => P.setPriority(t.id, n) }))); }
@@ -246,7 +264,7 @@ const priorityItems = t => [[0, 'No priority'], [1, 'Make P1'], [2, 'Make P2'], 
 function blockMenu(btn, t){
   menu(btn, [{ label:isDone(t) ? 'Mark not done' : 'Mark done', run:() => toggleDone(t) }, { label:'Edit', run:() => openEditor(t) }, { label:'Link ClickUp', run:() => openSession(t) },
     { label:'Move to next free slot', run:() => { const from = t.local_date >= today() ? t.local_date : today(), s = P.nextFree(t, from, from === t.local_date ? t.start_minute + SLOT : null);
-      if (!s) return toast('No free slot in the next 30 days. Drag it instead.', 'error'); toast(`Moved to ${fmtDate(s.date)}, ${fmtClock(s.minute)}.`, 'success', { label:'Undo', run:P.moveTask(t.id, s.date, s.minute) }); } },
+      if (!s) return toast('No free slot in the next 30 days. Drag it instead.', 'error'); toast(`Moved to ${fmtDate(s.date)}, ${fmtClock(s.minute)}.`, 'success', { label:'Undo', run:P.moveTask(t.id, s.date, s.minute) }); reveal(t.id); } },
     { label:'Send to Queue', run:() => toast('Sent to Queue.', 'success', { label:'Undo', run:P.toQueue(t.id) }) }, ...priorityItems(t),
     { label:'Delete', danger:true, run:() => { SFX.back(); toast('Block deleted.', null, { label:'Undo', run:P.deleteTask(t.id) }); } }]);
 }
@@ -373,12 +391,12 @@ function openEditor(task, at = {}){
     f.onsubmit = e => { e.preventDefault(); const v = read(); if (!v.title) return fail(f.title, 'Give the block a title.');
       if (!bank && !f.date.value) return fail(f.date, 'Pick a date.');
       if (!bank && !f.time.value) return fail(f.time, 'Pick a start time.');
-      if (task){ P.updateTask(task.id, v); close(true); toast('Saved.', 'success'); return; }
+      if (task){ P.updateTask(task.id, v); close(true); toast('Saved.', 'success'); reveal(task.id); return; }
       if (f.repeat.value){ const wd = [...f.querySelectorAll('[data-wd][aria-checked="true"]')].map(i => +i.dataset.wd);
         if (f.repeat.value === 'weekly' && !wd.length) return fail($(b, '[data-days]'), 'Pick at least one day.');
         if (f.until.value < v.date) return fail(f.until, 'The end date needs to be after the start.');
         const n = P.createSeries({ ...v, frequency:f.repeat.value, weekdays:wd, until:f.until.value }); close(true); toast(`Added ${n} block${n === 1 ? '' : 's'}.`, 'success'); return; }
-      P.createBlock(v); close(true); toast('Saved.', 'success'); };
+      const made = P.createBlock(v); close(true); toast('Saved.', 'success'); reveal(made.id); };
     if (task){ $(b, '[data-del]').onclick = () => { close(); toast('Block deleted.', null, { label:'Undo', run:P.deleteTask(task.id) }); };
       const doneBtn = $(b, '[data-done]'); if (doneBtn) doneBtn.onclick = () => { close(true); toggleDone(task); };
       $(b, '[data-link]').onclick = () => { close(true); openSession(task); }; }

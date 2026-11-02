@@ -55,6 +55,13 @@
 .blk:hover .more,.blk:focus-within .more{opacity:1}
 .blk.isdone .more{background:var(--raised)}
 .blk .more:hover{color:var(--ink)}
+/* Week columns are narrow: titles get two lines, and with a mouse the handle waits for hover so it never covers them */
+.cal.week .blk:not(.short) .tt{white-space:normal; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical}
+.cal.week .blk .tm{display:none} /* the row it sits on already says the time */
+@media (hover:hover){ .cal.week .blk:not(:hover):not(:focus-within) .more{opacity:0} }
+/* Marks where a saved or scheduled block landed */
+.blk.fresh{animation:fresh .9s steps(3,end)}
+@keyframes fresh{from{box-shadow:inset 0 0 0 2px var(--blue)} to{box-shadow:inset 0 0 0 2px transparent}}
 .menu button.danger-text{color:var(--danger)}
 .blk .tick:focus-visible,.blk .more:focus-visible{outline-offset:-2px} /* .blk clips, so the ring stays inside */
 .rz{position:absolute; left:0; right:0; bottom:0; height:6px; cursor:ns-resize; touch-action:none}
