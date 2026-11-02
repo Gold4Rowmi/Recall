@@ -2,6 +2,7 @@
 import * as store from '../store.js';
 import * as P from '../planner.js';
 import * as sync from '../sync.js';
+import * as calendar from '../calendar.js';
 import { toast, setMuted, setVolume, setDogSounds, paintDogs, SFX } from '../brand.js';
 import * as ui from '../ui.js';
 import { esc, icon, sheet, confirmSheet, fill, stateBlock, backBtn, toggle, isOn } from '../ui.js';
@@ -30,7 +31,7 @@ export function mountFollowUps(el){
   el.querySelector('.fu-list').onclick = e => { const b = e.target.closest('[data-fu]'); if (!b) return; if (b.dataset.fu === 'add') return el.querySelector('input').focus();
     const id = b.closest('[data-id]').dataset.id;
     if (b.dataset.fu === 'done') P.toggleReminder(id);
-    else if (b.dataset.fu === 'queue'){ P.reminderToQueue(id); toast('Moved to Queue.', 'success'); }
+    else if (b.dataset.fu === 'queue'){ P.reminderToQueue(id); toast('Moved to Unscheduled.', 'success'); }
     else if (b.dataset.fu === 'del') toast('Follow-up deleted.', null, { label:'Undo', run:P.deleteReminder(id) }); };
   el.querySelector('.fu-list').onchange = e => { const s = e.target.closest('select'); if (s) store.patch('reminders', s.closest('[data-id]').dataset.id, { assigned_person_id:s.value || null }); };
   renderFollowUps(el);
@@ -41,7 +42,7 @@ export function renderFollowUps(el){
       <button class="tick big" type="button" data-fu="done" aria-pressed="${!!r.completed_at}" aria-label="Mark done">${r.completed_at ? icon('check') : ''}</button>
       <span class="qtext">${esc(r.title)}</span>
       <select aria-label="Assigned to">${personOptions(r.assigned_person_id)}</select>
-      <button class="btn" type="button" data-fu="queue">Queue</button><button class="btn ghost danger-text" type="button" data-fu="del" data-sfx="back" data-x><span class="glyph">X</span>Delete</button></div>`).join('')
+      <button class="btn" type="button" data-fu="queue" title="Move to Unscheduled">Unscheduled</button><button class="btn ghost danger-text" type="button" data-fu="del" data-sfx="back" data-x><span class="glyph">X</span>Delete</button></div>`).join('')
     : stateBlock('sleepy', 'No follow-ups', 'Add anything you need to chase up.', '<button class="btn primary" type="button" data-fu="add"><span class="glyph">A</span>Add a follow-up</button>');
   if (list.dataset.html !== html){ list.dataset.html = html; fill(list, html); }
 }
@@ -67,15 +68,22 @@ export function openSettings(){
   sheet('Settings', (b, close) => {
     const theme = localStorage.getItem('recall.theme') || 'system', muted = store.pref('sound_muted', '0') === '1', volume = +store.pref('sound_volume', '6'), motion = store.pref('ui_motion_enabled', '1') !== '0';
     const brk = store.pref('break_reminders_enabled', '1') !== '0', minute = +store.pref('break_reminder_minute', 780), hhmm = `${String(Math.floor(minute / 60)).padStart(2, '0')}:${String(minute % 60).padStart(2, '0')}`;
+    const wrap = +store.pref('wrapup_minute', 1050), wrapAt = `${String(Math.floor(wrap / 60)).padStart(2, '0')}:${String(wrap % 60).padStart(2, '0')}`;
     b.innerHTML = `<div class="settings">
       <label class="field">Theme<select data-theme-pick><option value="system">${window.__TAURI__ ? 'Match Windows' : 'Match this device'}</option><option value="light">Light</option><option value="dark">Dark</option></select></label>
       ${toggle('Sound', !muted, 'data-sound')}
       <div class="detent-ctl"><label class="field">Volume<input type="range" min="0" max="10" step="1" value="${volume}" data-volume></label><div class="ticks" aria-hidden="true">${Array.from({ length:11 }, (_, i) => `<i class="${i <= volume ? 'on' : ''}"></i>`).join('')}</div></div>
       ${toggle('Dog sounds', store.pref('dog_sounds', '1') !== '0', 'data-dogs')}
       ${toggle('Motion', motion, 'data-motion')}
+      <h3 class="pixel sect">Reminders</h3>
       ${toggle('Daily break reminder', brk, 'data-break')}
       <label class="field">Break time<input type="time" step="1800" data-break-at value="${hhmm}"><span class="help">Shows once a day, up to three hours after this time.</span></label>
+      ${toggle('Heads-up 5 minutes before blocks', store.pref('block_headsup', '1') !== '0', 'data-headsup')}
+      ${toggle('End-of-day wrap-up', store.pref('wrapup_enabled', '1') !== '0', 'data-wrap')}
+      <label class="field">Wrap-up time<input type="time" step="1800" data-wrap-at value="${wrapAt}"><span class="help">Offers to carry what’s left to tomorrow, once a day.</span></label>
+      <h3 class="pixel sect">Planning</h3>
       <label class="field">Team capacity hours per week<input type="number" min="0" max="168" data-capacity value="${esc(store.pref('team_capacity_hours', '30'))}"></label>
+      <h3 class="pixel sect">Calendar</h3><div data-calendar></div>
       <h3 class="pixel sect">ClickUp</h3><div class="row" data-cu><span class="muted">Checking the connection</span></div>
       <h3 class="pixel sect">Team</h3><div data-team>${teamRows()}</div>
       <form class="capture" data-add><input aria-label="New team member" placeholder="Add a team member" required><button class="btn" type="submit">Add</button></form>
@@ -94,6 +102,23 @@ export function openSettings(){
     $('[data-about]').onclick = () => { close(true); document.getElementById('about').showModal(); };
     $('[data-break-at]').onchange = e => { const [h, m] = e.target.value.split(':').map(Number); if (!isNaN(h)) store.setPref('break_reminder_minute', String(h * 60 + m)); };
     $('[data-capacity]').onchange = e => store.setPref('team_capacity_hours', e.target.value);
+    $('[data-headsup]').onclick = e => store.setPref('block_headsup', isOn(e.currentTarget) ? '1' : '0');
+    $('[data-wrap]').onclick = e => store.setPref('wrapup_enabled', isOn(e.currentTarget) ? '1' : '0');
+    $('[data-wrap-at]').onchange = e => { const [h, m] = e.target.value.split(':').map(Number); if (!isNaN(h)) store.setPref('wrapup_minute', String(h * 60 + m)); };
+    const calBox = $('[data-calendar]');
+    const ago = () => { const n = Math.round((Date.now() - calendar.updatedAt()) / 6e4); return n < 1 ? 'just now' : n < 60 ? `${n} min ago` : `${Math.round(n / 60)} h ago`; };
+    const paintCal = () => { const url = calendar.feedUrl();
+      if (store.ctx.demo){ calBox.innerHTML = '<span class="muted">The demo shows two made-up meetings.</span>'; return; }
+      calBox.innerHTML = url
+        ? `<div class="row"><span>Connected to ${esc(calendar.hostOf(url))}</span><span class="spacer"></span><button class="btn" type="button" data-cal-sync>Update now</button><button class="btn ghost danger-text" type="button" data-cal-off data-sfx="back">Disconnect</button></div><p class="help">${calendar.updatedAt() ? 'Updated ' + ago() : 'Not updated yet'}. Meetings show on Today, and Fill my day works around them.</p>`
+        : `<form data-cal-form><label class="field">Calendar link<input type="url" data-cal-url placeholder="Paste your calendar’s ICS link" autocomplete="off" spellcheck="false" required><span class="help">Outlook: Settings, Calendar, Shared calendars, Publish a calendar, then ICS. Google: Settings, your calendar, Secret address in iCal format.</span></label><button class="btn" type="submit">Connect</button></form>`; };
+    paintCal();
+    calBox.onsubmit = async e => { e.preventDefault(); const input = $('[data-cal-url]'), btn = e.target.querySelector('button'); btn.disabled = true; btn.textContent = 'Connecting';
+      try { await calendar.connect(input.value); toast(`Calendar connected. ${calendar.countThisWeek()} meetings this week.`, 'success'); paintCal(); }
+      catch (err){ ui.fieldErr(input, err.message); btn.disabled = false; btn.textContent = 'Connect'; } };
+    calBox.onclick = async e => {
+      if (e.target.closest('[data-cal-off]')){ calendar.disconnect(); toast('Calendar disconnected.'); paintCal(); }
+      else if (e.target.closest('[data-cal-sync]')){ try { await calendar.refresh(); toast('Calendar is up to date.', 'success'); } catch (err){ toast(err.message, 'error'); } paintCal(); } };
     $('[data-close]').onclick = () => close();
     const team = $('[data-team]');
     team.onchange = e => { const id = e.target.closest('[data-id]').dataset.id; if (e.target.type === 'color') store.patch('workspace_people', id, { color:e.target.value }); else if (e.target.value.trim()) store.patch('workspace_people', id, { display_name:e.target.value.trim() }); };

@@ -24,6 +24,9 @@
 .wrow .tone{align-self:stretch; border-radius:4px; background:var(--frame)}
 .wrow.bad .tone{background:var(--danger)} .wrow.warn .tone{background:var(--warning)} .wrow.good .tone{background:var(--success)} .wrow.info .tone{background:var(--info)}
 .wmain{min-width:0} .wtitle{font-weight:600}
+@media (max-width:480px){ /* the title and the reason are the message: wrap them on a phone, don't cut them */
+  .wmain .clip{white-space:normal; overflow-wrap:anywhere}
+}
 .wmain .small:last-child{overflow-wrap:anywhere}
 .wact{display:flex; justify-content:flex-end}
 .wact .btn{padding:0 12px; color:var(--muted)}

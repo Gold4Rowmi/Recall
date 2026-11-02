@@ -81,14 +81,20 @@ document.addEventListener('click', e => { const b = e.target.closest(PRESS); if 
 // Selects, colours and dates answer when they change; text fields would tick on every blur, and a slider has its detents.
 document.addEventListener('change', e => { if (!e.target.matches('textarea, input:not([type]), input[type="text"], input[type="email"], input[type="password"], input[type="range"]')) SFX.tick(); }, true);
 
-let toastT;
+let toastT, undoable = null;
 // Emptied once it's out of sight, so nothing in it can be tabbed to.
 const hide = () => { const t = $('toast'); t.classList.remove('show'); clearTimeout(toastT); toastT = setTimeout(() => { t.textContent = ''; }, 300); };
+// Pointing at the message or tabbing into it holds it open; leaving gives a few more seconds.
+function wireToast(t){ if (t._wired) return; t._wired = true;
+  const hold = () => clearTimeout(toastT), rest = () => { if (t.classList.contains('show')) toastT = setTimeout(hide, 3000); };
+  t.addEventListener('pointerenter', hold); t.addEventListener('focusin', hold); t.addEventListener('pointerleave', rest); t.addEventListener('focusout', rest); }
+// Ctrl+Z: the Undo on the message that is showing, for anyone who deleted with a key and can't reach its button in time.
+export function undoLast(){ if (!undoable || !$('toast').classList.contains('show')) return false; const a = undoable; undoable = null; hide(); a.run(); return true; }
 // action = { label, run }: an inline undo instead of a confirm dialog for reversible work.
-export function toast(msg, kind, action){ const t = $('toast'); t.textContent = msg;
-  if (action){ const b = document.createElement('button'); b.type = 'button'; b.textContent = action.label; b.onclick = () => { hide(); b.remove(); action.run(); }; t.appendChild(b); }
+export function toast(msg, kind, action){ const t = $('toast'); t.textContent = msg; wireToast(t); undoable = action?.label === 'Undo' ? action : null;
+  if (action){ const b = document.createElement('button'); b.type = 'button'; b.textContent = action.label; b.onclick = () => { undoable = null; hide(); b.remove(); action.run(); }; t.appendChild(b); }
   t.classList.remove('show'); t.hidePopover?.(); t.showPopover?.(); void t.offsetWidth; // re-entering the top layer puts it above any open sheet
-  t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(hide, action ? 6000 : 2400);
+  t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(hide, action ? 10000 : 2400);
   if (kind === 'error'){ react('sad', 900); SFX.error(); } else if (kind === 'success') celebrate(); else if (kind === 'big') celebrate(true); else if (kind === 'new'){ react('alert', 700, EMOTE); SFX.news(); } }
 
 /* Boot: once per launch, skippable after 300 ms, ends on the logo */

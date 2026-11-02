@@ -230,5 +230,6 @@ dialog .sheet-actions{position:sticky; bottom:-20px; z-index:1; margin:16px -20p
   .view{padding:12px 12px 76px}
   .actionbar{display:contents} .actionbar>:not(#newBlock){display:none} /* no second bar above the tabs */
   #newBlock{position:fixed; right:12px; bottom:calc(72px + env(safe-area-inset-bottom,0px)); z-index:25}
+  @media (pointer:coarse){ #newBlock .glyph{display:none} #newBlock{padding:0 16px} } /* a controller letter means nothing on a touch screen, and the button covers less */
   .toast{--at:calc(148px + env(safe-area-inset-bottom,0px))} /* clears New block and the tabs */
 }

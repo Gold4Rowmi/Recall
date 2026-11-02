@@ -1,7 +1,7 @@
 // node --test tests/
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { clampDuration, occurrenceDates, slotChanges, pushPlan, nextFreeSlot, metrics, category, timeMix, hourBins, observations, pulse, journal, suggestLinks, inferSessionType, fmtClock } from '../ui/js/planner.js';
+import { fillPlan, carryPlan, clampDuration, occurrenceDates, slotChanges, pushPlan, nextFreeSlot, metrics, category, timeMix, hourBins, observations, pulse, journal, suggestLinks, inferSessionType, fmtClock } from '../ui/js/planner.js';
 import { melbourneISO, weekday } from '../ui/js/time.js';
 
 const block = (id, minute, duration = 30, extra = {}) => ({ id, start_minute:minute, duration_minutes:duration, state:'scheduled', priority_hint:0, title:'', ...extra });
@@ -94,4 +94,30 @@ test('resize keeps a block inside its own day and above one slot', () => {
   assert.equal(clampDuration(14 * 60, 690), 600);
   assert.equal(clampDuration(14 * 60, 60), 60);
   assert.equal(clampDuration(14 * 60, 0), 30);
+});
+
+const waiting = (id, duration, extra = {}) => ({ id, title:id, duration_minutes:duration, priority_hint:0, created_at:'2026-11-01T00:00:00Z', ...extra });
+const TODAY = { date:'2026-11-02', now:'2026-11-02', nowMin:540 };
+
+test('fill goes by priority, then oldest, into free time after now', () => {
+  const q = [waiting('old', 60, { created_at:'2026-10-01T00:00:00Z' }), waiting('p2', 30, { priority_hint:2 }), waiting('p1', 30, { priority_hint:1 }), waiting('new', 30)];
+  const { placed } = fillPlan(() => [], q, TODAY);
+  assert.deepEqual(placed.map(p => [p.id, p.minute]), [['p1', 540], ['p2', 570], ['old', 600], ['new', 660]]);
+});
+test('fill works around blocks and meetings', () => {
+  const { placed } = fillPlan(() => [block('m', 540, 90)], [waiting('a', 60)], TODAY);
+  assert.equal(placed[0].minute, 630);
+});
+test('fill stops at a full day, skipping what no longer fits', () => {
+  const { placed, left } = fillPlan(() => [], [waiting('a', 240), waiting('b', 240), waiting('c', 30)], { ...TODAY, planned:30 });
+  assert.deepEqual([placed.map(p => p.id), left.map(t => t.id)], [['a', 'c'], ['b']]);
+});
+test('fill never spills onto another day', () => {
+  const { placed, left } = fillPlan(() => [block('all', 420, 780)], [waiting('a', 30)], TODAY);
+  assert.deepEqual([placed.length, left.length], [0, 1]);
+});
+test('carry keeps the time when it is free and moves what clashes', () => {
+  const tomorrow = '2026-11-03', day = d => d === tomorrow ? [block('m', 600, 60)] : [];
+  const out = carryPlan(day, [block('a', 540, 30), block('b', 600, 30), block('c', 630, 30)], { date:tomorrow, now:'2026-11-02' });
+  assert.deepEqual(out.map(p => [p.id, p.date, p.minute]), [['a', tomorrow, 540], ['b', tomorrow, 660], ['c', tomorrow, 690]]);
 });

@@ -110,6 +110,7 @@ function listen(){
 }
 
 const bridge = fn => sb.functions.invoke('recall-bridge', { body:{ fn, body:{ workspace_id:ctx.workspaceId } } });
+export const calendarFeed = url => sb.functions.invoke('recall-calendar', { body:{ url } });
 const CLICKUP_EVERY = 10 * 60 * 1000;
 // A successful full sync refreshes synced_at on every in-scope active task, so active rows it left behind
 // were deleted, archived or moved out of scope in ClickUp. The 75% gate guards against a partial response.

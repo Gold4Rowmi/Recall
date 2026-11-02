@@ -62,6 +62,32 @@ export function nextFreeSlot(tasksOn, duration, { date, minute = null, excludeId
   return null;
 }
 
+const overlay = (tasksOn, placed) => d => [...tasksOn(d), ...placed.filter(p => p.date === d).map(p => ({ id:p.id, start_minute:p.minute, duration_minutes:p.duration }))];
+
+// Where waiting work would go today: P1 to P3 first, then Important, then oldest first, each in the first free slot, up to a full day's capacity.
+// tasksOn(date) must include meetings. Nothing moves that was already planned.
+export function fillPlan(tasksOn, queued, { date, planned = 0, now = today(), nowMin = nowMinute() }){
+  const rank = t => [1, 2, 3].includes(t.priority_hint) ? t.priority_hint : t.priority_hint === 4 ? 4 : 5, placed = [], left = [];
+  const order = [...queued].sort((a, b) => rank(a) - rank(b) || String(a.created_at).localeCompare(String(b.created_at)));
+  for (const t of order){
+    const d = dur(t) || SLOT, slot = planned + d > CAPACITY ? null : nextFreeSlot(overlay(tasksOn, placed), d, { date, now, nowMin, excludeId:t.id });
+    if (!slot || slot.date !== date){ left.push(t); continue; }
+    placed.push({ id:t.id, title:t.title, date, minute:slot.minute, duration:d }); planned += d;
+  }
+  return { placed, left };
+}
+
+// Open blocks moved to another day: the same time if it is free, otherwise the first free slot from then on.
+export function carryPlan(tasksOn, open, { date, now = today() }){
+  const placed = [];
+  for (const t of [...open].sort((a, b) => a.start_minute - b.start_minute)){
+    const d = dur(t) || SLOT, day = overlay(tasksOn, placed), keep = t.start_minute + d <= DAY_END && free(day(date), t.start_minute, d, t.id);
+    const slot = keep ? { date, minute:t.start_minute } : nextFreeSlot(day, d, { date, minute:t.start_minute, now, excludeId:t.id });
+    if (slot) placed.push({ id:t.id, title:t.title, date:slot.date, minute:slot.minute, duration:d });
+  }
+  return placed;
+}
+
 // Performance semantics are unchanged from TimeBlock v6; see the labels' tooltips in today.js.
 export function metrics(tasks, queueCount, date, now, nowMin){
   const planned = tasks.reduce((n, t) => n + dur(t), 0), completed = tasks.filter(isDone).reduce((n, t) => n + dur(t), 0);
@@ -183,6 +209,10 @@ function index(){
   return dayIndex;
 }
 export const dayTasks = date => index().get(date) || [];
+// Meetings from the calendar feed: they block automatic placement but are not blocks of ours.
+let external = () => [];
+export const setExternal = fn => { external = fn; };
+export const busyOn = date => { const x = external(date); return x.length ? [...dayTasks(date), ...x] : dayTasks(date); };
 export const rangeTasks = (from, to) => { const out = []; for (let d = from; d <= to; d = addDays(d, 1)) out.push(...dayTasks(d)); return out; };
 export const queue = () => store.all('tasks').filter(t => t.state === 'bank' && !t.completed_at).sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
 
@@ -267,7 +297,7 @@ export function deleteTask(id){
 }
 
 export function nextFree(task, fromDate = task.local_date || today(), minute = null){
-  return nextFreeSlot(dayTasks, +task.duration_minutes, { date:fromDate, minute, excludeId:task.id });
+  return nextFreeSlot(busyOn, +task.duration_minutes, { date:fromDate, minute, excludeId:task.id });
 }
 
 // One row per occurrence, written once at creation. Other devices receive the rows, so nothing regenerates there.

@@ -6,7 +6,8 @@ function parts(d){ const o = {}; fmt.formatToParts(d).forEach(p => { o[p.type] =
 
 export function today(now = new Date()){ const p = parts(now); return `${p.year}-${pad(p.month)}-${pad(p.day)}`; }
 export function nowMinute(now = new Date()){ const p = parts(now); return p.hour * 60 + p.minute; }
-export const addDays = (date, n) => { const d = new Date(date + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+export function localAt(ms){ const p = parts(new Date(ms)); return { date:`${p.year}-${pad(p.month)}-${pad(p.day)}`, minute:p.hour * 60 + p.minute }; }
+export const addDays =(date, n) => { const d = new Date(date + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
 export const weekday = date => (new Date(date + 'T12:00:00Z').getUTCDay() + 6) % 7; // Monday = 0, as Python's date.weekday()
 export const mondayOf = date => addDays(date, -weekday(date));
 export const fmtMinute = m => `${pad(Math.floor(m / 60))}:${pad(m % 60)}`;

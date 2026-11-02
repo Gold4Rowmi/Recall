@@ -81,8 +81,8 @@ export default {
     const item = insights.snapshot()?.suggestions[i]; if (!item) return;
     const title = item.task_title || item.title, btn = this.el.querySelector(`[data-queue="${i}"]`);
     if (!queued(title)) newTask({ title, notes:[item.why, item.action].filter(Boolean).join('\n'), duration:30 });
-    if (btn){ btn.disabled = true; btn.textContent = 'Queued'; }
-    toast('Added to Unscheduled work on Today.', 'success');
+    if (btn){ btn.disabled = true; btn.textContent = 'Added'; }
+    toast('Added to Unscheduled on Today.', 'success');
   },
   renderTeam(){
     const snap = insights.snapshot(); if (!snap) return;
@@ -110,7 +110,7 @@ export default {
     fillRolling(q('[data-metrics]'), metricStrip(METRICS, { decisions:snap.needs.length, risk:snap.brief.risk.length || riskProjects.length, gaps:snap.planning_gaps, capacity:snap.brief.people.length }));
     fill(q('[data-needs]'), snap.needs.slice(0, 7).map(n => workRow({ tone:'warn', title:n.title, meta:[n.status || 'Needs attention', dueText(n.due)].filter(Boolean).join(' · '), detail:n.why, action:n.row?.url ? openRow(n.row.url) : '' })).join('')
       || (snap.has_clickup ? stateBlock('sleepy', 'Nothing needs you', 'No decision is waiting on you.', '<button class="btn primary" type="button" data-today><span class="glyph">A</span>Go to Today</button>') : noClickUp('No ClickUp work yet')));
-    fill(q('[data-moves]'), snap.suggestions.slice(0, 7).map((m, i) => workRow({ tone:'info', title:m.title, meta:m.owner, detail:m.action || m.why, action:queued(m.task_title || m.title) ? '<button class="btn" type="button" disabled>Queued</button>' : `<button class="btn" type="button" data-queue="${i}">Queue</button>` })).join('') || `<p class="pad muted">${snap.has_clickup ? 'No move is recommended right now.' : 'Moves appear once ClickUp work is in.'}</p>`);
+    fill(q('[data-moves]'), snap.suggestions.slice(0, 7).map((m, i) => workRow({ tone:'info', title:m.title, meta:m.owner, detail:m.action || m.why, action:queued(m.task_title || m.title) ? '<button class="btn" type="button" disabled>Added</button>' : `<button class="btn" type="button" data-queue="${i}" title="Add to Unscheduled on Today">Add</button>` })).join('') || `<p class="pad muted">${snap.has_clickup ? 'No move is recommended right now.' : 'Moves appear once ClickUp work is in.'}</p>`);
     fill(q('[data-projects]'), snap.projects.map(p => workRow({ tone:TONE[p.signal], title:p.name, meta:`${WORD[p.signal]} · ${p.target ? dueText(p.target) : 'No target'} · ${p.coverage_text}`, detail:p.gap_text === 'covered' ? 'Covered' : cap(p.gap_text) + (p.recommendation ? ' · ' + p.recommendation : ''), action:p.row?.url ? openRow(p.row.url) : '' })).join('') || noClickUp('No projects yet'));
     this.renderTeam();
     fill(q('[data-campaigns]'), snap.campaigns.map(c => {

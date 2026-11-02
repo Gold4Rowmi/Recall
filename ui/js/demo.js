@@ -4,6 +4,12 @@ import { today, addDays } from './time.js';
 import { newTask } from './tasks.js';
 import { seedInsightsDemo } from './demo-insights.js';
 
+// Two made-up meetings so the demo shows the calendar link at work: one today, one repeating on this weekday.
+export const DEMO_ICS = () => {
+  const d = today().replace(/-/g, ''), z = 'TZID=Australia/Melbourne', ev = (uid, title, from, to, rule = '') => `BEGIN:VEVENT\r\nUID:${uid}\r\nSUMMARY:${title}\r\nDTSTART;${z}:${d}T${from}00\r\nDTEND;${z}:${d}T${to}00\r\n${rule}END:VEVENT\r\n`;
+  return `BEGIN:VCALENDAR\r\nVERSION:2.0\r\n${ev('demo-1', 'Client call', '1200', '1230')}${ev('demo-2', 'Weekly sync', '1500', '1530', 'RRULE:FREQ=WEEKLY\r\n')}END:VCALENDAR\r\n`;
+};
+
 export function seedDemo(){
   store.ctx.workspaceId = '00000000-0000-4000-8000-000000000001';
   store.ctx.userId = '00000000-0000-4000-8000-000000000002';

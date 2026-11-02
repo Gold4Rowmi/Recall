@@ -7,6 +7,7 @@ import { esc, icon, sheet, menu, confirmSheet, loadingBlock, stateBlock, fill, b
 import { today, addDays, fmtDate, fmtDuration, mondayOf, nowMinute } from '../time.js';
 import { openExternal, getStatus, onStatus, syncNow } from '../sync.js';
 import { isIgnored } from '../analytics.js';
+import * as calendar from '../calendar.js';
 import * as quest from './quest.js';
 import { mountFollowUps, renderFollowUps, personOptions } from './utilities.js';
 
@@ -38,7 +39,8 @@ function mount(el){
       <button class="btn icon" type="button" data-act="next" aria-label="Next" title="Next">${icon('chevron-right')}</button>
       <h1 class="pixel" id="tdate"></h1><span class="spacer"></span>
       <div class="seg" role="group" aria-label="Calendar view">${['day', 'week', 'month'].map(m => `<button type="button" data-mode="${m}">${m[0].toUpperCase() + m.slice(1)}</button>`).join('')}</div>
-      <button class="btn" type="button" data-act="plan">Plan work</button>
+      <button class="btn" type="button" data-act="wrap" hidden>Wrap up</button>
+      <button class="btn" type="button" data-act="plan">Unscheduled</button>
     </div>
     <div class="health" id="thealth"></div>
     <div class="tmain">
@@ -52,7 +54,7 @@ function mount(el){
         <section><h3>Today</h3><div id="tobs" class="muted"></div></section>
         <div class="railcue" aria-hidden="true" hidden>More below</div>
       </aside>
-      <aside class="drawer" id="tdrawer" aria-label="Plan work"></aside>
+      <aside class="drawer" id="tdrawer" aria-label="Unscheduled work"></aside>
     </div>
   </div>`;
   cal = $(el, '#tcal'); health = $(el, '#thealth'); queueEl = $(el, '#tqueue'); rail = $(el, '.rail'); drawer = $(el, '#tdrawer');
@@ -94,6 +96,7 @@ function render(){
   renderQueue(); renderRail(m); renderDrawer();
   const shown = S.mode === 'month' ? Array.from({ length:31 }, (_, i) => addDays(S.date.slice(0, 8) + '01', i)) : visibleDates();
   if (ready() && !shown.some(d => P.dayTasks(d).length)) root.dataset.rest = 'sleepy'; else delete root.dataset.rest; // the planner is never blank, so the header dog shows it
+  syncWrapChip();
 }
 
 function renderHealth(m){
@@ -121,7 +124,7 @@ function lanes(tasks){ // side-by-side columns for overlapping blocks
 }
 
 function renderGrid(){
-  const dates = visibleDates(), all = dates.flatMap(P.dayTasks), now = today();
+  const dates = visibleDates(), all = dates.flatMap(P.busyOn), now = today();
   const lo = Math.min(DAY_START, ...all.map(t => Math.floor(t.start_minute / 60) * 60));
   const hi = Math.max(DAY_END, ...all.map(t => Math.ceil((t.start_minute + t.duration_minutes) / 60) * 60));
   SLOT_PX = phone.matches ? 44 : 24; PX = SLOT_PX / SLOT;
@@ -137,7 +140,19 @@ function renderGrid(){
   }
   const seen = new Set();
   for (const d of dates){
-    const tasks = P.dayTasks(d), lay = lanes(tasks), col = cal.querySelector(`[data-date="${d}"]`);
+    const tasks = P.dayTasks(d), meetings = calendar.eventsOn(d), lay = lanes([...tasks, ...meetings].sort((a, b) => a.start_minute - b.start_minute)), col = cal.querySelector(`[data-date="${d}"]`);
+    for (const x of meetings){ // read-only: they sit beside the blocks, and nothing on them can be dragged or ticked
+      seen.add(x.id);
+      const { lane, of } = lay.get(x.id), sig = [x.title, x.start_minute, x.duration_minutes, lane, of, SLOT_PX].join('|');
+      let el = blocks.get(x.id);
+      if (!el){ el = document.createElement('div'); el.className = 'xblk'; blocks.set(x.id, el); }
+      if (el.parentNode !== col) col.appendChild(el);
+      if (el.dataset.sig === sig) continue;
+      el.dataset.sig = sig; el.classList.toggle('short', x.duration_minutes <= SLOT);
+      el.style.cssText = `top:${yOf(x.start_minute)}px;height:${x.duration_minutes * PX - 2}px;left:calc(${lane * 100 / of}% + 2px);width:calc(${100 / of}% - 4px)`;
+      el.title = `${x.title}, ${fmtClock(x.start_minute)}, ${fmtDuration(x.duration_minutes)}. From your calendar.`;
+      el.innerHTML = `<span class="tt">${esc(x.title)}</span>`;
+    }
     for (const t of tasks){
       seen.add(t.id);
       const { lane, of } = lay.get(t.id), done = isDone(t), p = priorityLabel(t.priority_hint), c = colourOf(t);
@@ -188,12 +203,12 @@ function renderMonth(){
 function queueRow(t){
   const who = person(t.assigned_person_id)?.display_name, p = priorityLabel(t.priority_hint);
   return `<div class="qrow" data-qid="${esc(t.id)}"><span class="qdrag" aria-hidden="true"></span><span class="qtext"><span class="clip">${esc(t.title)}</span><span class="small muted clip">${[fmtDuration(t.duration_minutes), who, p].filter(Boolean).map(esc).join(' · ')}</span></span>
-    <span class="qacts"><button class="btn" type="button" data-act="qplan" title="Schedule in the next free slot">Schedule</button><button class="btn icon" type="button" data-act="qdel" data-sfx="back" data-x aria-label="Delete" title="Remove from Queue. Undo is available.">${icon('trash')}</button><button class="btn icon" type="button" data-act="qmore" aria-label="More">${icon('more')}</button></span></div>`;
+    <span class="qacts"><button class="btn" type="button" data-act="qplan" title="Schedule in the next free slot">Schedule</button><button class="btn icon" type="button" data-act="qdel" data-sfx="back" data-x aria-label="Delete" title="Remove from Unscheduled. Undo is available.">${icon('trash')}</button><button class="btn icon" type="button" data-act="qmore" aria-label="More">${icon('more')}</button></span></div>`;
 }
 function renderQueue(){
   if (!ready()) return write(queueEl, `<div class="qhead"><h2>Unscheduled work</h2></div><p class="muted small qempty">${DASH}</p>`);
-  const q = P.queue(), show = q.length > 3 ? `<button class="btn" type="button" data-act="plan">Show all ${q.length}</button>` : q.length ? '<button class="btn qshow" type="button" data-act="plan">Show</button>' : ''; // .qshow only appears when short windows hide the rows
-  write(queueEl, `<div class="qhead"><h2>Unscheduled work${q.length ? ` · ${q.length}` : ''}</h2>${show}</div>${q.length ? q.slice(0, 3).map(queueRow).join('') : '<p class="muted small qempty">Queue clear. Everything captured has a place.</p>'}`);
+  const q = P.queue(), show = (q.length ? '<button class="btn" type="button" data-act="fill">Fill my day</button>' : '') + (q.length > 3 ? `<button class="btn" type="button" data-act="plan">Show all ${q.length}</button>` : q.length ? '<button class="btn qshow" type="button" data-act="plan">Show</button>' : ''); // .qshow only appears when short windows hide the rows
+  write(queueEl, `<div class="qhead"><h2>Unscheduled work${q.length ? ` · ${q.length}` : ''}</h2><span class="qbtns">${show}</span></div>${q.length ? q.slice(0, 3).map(queueRow).join('') : '<p class="muted small qempty">Nothing unscheduled. Everything captured has a place.</p>'}`);
 }
 function renderRail(m){
   if (!rail.offsetParent) return; // removed below the breakpoint rather than squeezed
@@ -211,18 +226,18 @@ let drawerFrom = null; // where focus goes back to when the drawer closes
 function setDrawer(tab){
   if (tab && !S.drawer) drawerFrom = document.activeElement;
   S.drawer = tab; drawer.classList.toggle('open', !!tab); drawer._html = null;
-  if (tab){ drawer.innerHTML = `<div class="dhead"><div class="seg">${[['queue', 'Queue'], ['followups', 'Follow-ups'], ['details', 'Details']].map(([k, l]) => `<button type="button" data-tab="${k}" aria-pressed="${k === tab}">${l}</button>`).join('')}</div><span class="spacer"></span><button class="btn icon" type="button" data-act="close" data-sfx="back" aria-label="Close">${icon('close')}</button></div><div class="dbody"></div>`;
-    if (tab === 'queue'){ $(drawer, '.dbody').innerHTML = `<form class="capture" id="qadd"><input aria-label="New queue item" placeholder="Capture something" required><button class="btn" type="submit">Add</button></form><div class="dlist"></div>`;
-      $(drawer, '#qadd').onsubmit = e => { e.preventDefault(); const i = e.target.querySelector('input'); P.createBlock({ title:i.value.trim(), duration:30 }); i.value = ''; }; }
+  if (tab){ drawer.innerHTML = `<div class="dhead"><div class="seg">${[['queue', 'Unscheduled'], ['followups', 'Follow-ups'], ['details', 'Details']].map(([k, l]) => `<button type="button" data-tab="${k}" aria-pressed="${k === tab}">${l}</button>`).join('')}</div><span class="spacer"></span><button class="btn icon" type="button" data-act="close" data-sfx="back" aria-label="Close">${icon('close')}</button></div><div class="dbody"></div>`;
+    if (tab === 'queue'){ $(drawer, '.dbody').innerHTML = `<form class="capture" id="qadd"><input aria-label="New unscheduled item" placeholder="Capture something" required><button class="btn" type="submit">Add</button></form><div class="dlist"></div>`;
+      $(drawer, '#qadd').onsubmit = e => { e.preventDefault(); const i = e.target.querySelector('input'); P.createBlock({ title:i.value.trim(), duration:30 }); i.value = ''; toast('Added to Unscheduled.'); }; }
     if (tab === 'followups') mountFollowUps($(drawer, '.dbody'));
-    renderDrawer(); $(drawer, `[data-tab="${tab}"]`).focus(); }
+    renderDrawer(); (tab === 'queue' ? $(drawer, '#qadd input') : $(drawer, `[data-tab="${tab}"]`)).focus(); } // the capture field is why anyone opens Unscheduled
   else { drawerFrom?.focus(); drawerFrom = null; }
 }
 function renderDrawer(){
   if (!S.drawer) return; const body = $(drawer, '.dbody');
   if (!ready() && S.drawer !== 'followups') return write(S.drawer === 'queue' ? $(body, '.dlist') : body, `<p class="muted">${DASH}</p>`);
   if (S.drawer === 'followups') renderFollowUps(body);
-  else if (S.drawer === 'queue'){ const q = P.queue(); write($(body, '.dlist'), q.length ? q.map(queueRow).join('') : '<p class="muted qempty">Queue clear. Everything captured has a place.</p>'); }
+  else if (S.drawer === 'queue'){ const q = P.queue(); write($(body, '.dlist'), q.length ? q.map(queueRow).join('') : '<p class="muted qempty">Nothing unscheduled. Everything captured has a place.</p>'); }
   else { const d = today(), tasks = P.dayTasks(d), p = P.pulse(tasks, nowMinute());
     const mets = P.dayMetrics(d), rings = rail.offsetParent ? '' : `<h3>Performance</h3><div class="rings">${ringsHtml({ Focus:mets.focus, Completion:mets.completion, 'Plan done':mets.planDone })}</div>`; // the rail is gone at this width
     write(body, `${rings}<h3>Top 3</h3><div class="top3">${[1, 2, 3].map(n => { const t = tasks.find(x => x.priority_hint === n); return `<button class="btn" type="button" data-act="slot" data-slot="${n}"><b>P${n}</b><span class="clip">${t ? esc(t.title) : 'Choose a block'}</span></button>`; }).join('')}</div>
@@ -233,6 +248,7 @@ function renderDrawer(){
 let swallowClick = false;
 function onClick(e){
   if (swallowClick){ swallowClick = false; return; }
+  if (e.target.closest('.xblk')) return toast('That’s from your calendar. Change it there.');
   const mode = e.target.closest('[data-mode]'); if (mode){ S.mode = mode.dataset.mode; localStorage.setItem('recall.mode', S.mode); gridKey = ''; cal._html = null; render();
     if (S.mode === 'month'){ cal.scrollTop = 0; const c = cal.querySelector('.mcell.isnow'); if (c) cal.scrollTop = Math.max(0, c.getBoundingClientRect().top - cal.querySelector('.mgrid').getBoundingClientRect().top - 8); }
     return; }
@@ -244,6 +260,8 @@ function onClick(e){
     case 'next': return step(1);
     case 'today': S.date = today(); return render();
     case 'plan': return setDrawer(S.drawer === 'queue' ? null : 'queue');
+    case 'fill': return fillDay();
+    case 'wrap': return wrapUp();
     case 'details': return setDrawer('details');
     case 'close': return setDrawer(null);
     case 'day': S.date = e.target.closest('[data-date]').dataset.date; S.mode = 'day'; cal._html = null; return render();
@@ -251,7 +269,7 @@ function onClick(e){
     case 'done': return toggleDone(task);
     case 'more': return blockMenu(e.target.closest('button'), task);
     case 'qplan': { const s = P.nextFree(task, today()); if (!s) return toast('No free slot in the next 30 days. Drag it onto the calendar instead.', 'error'); const undo = P.fromQueue(task.id, s.date, s.minute); reveal(task.id); return toast(`Scheduled ${fmtDate(s.date)}, ${fmtClock(s.minute)}.`, 'success', { label:'Undo', run:undo }); }
-    case 'qdel': return toast('Removed from Queue.', null, { label:'Undo', run:P.deleteTask(task.id) });
+    case 'qdel': return toast('Removed from Unscheduled.', null, { label:'Undo', run:P.deleteTask(task.id) });
     case 'qmore': return menu(e.target.closest('button'), [{ label:'Edit', run:() => openEditor(task) }, ...priorityItems(task)]);
     case 'slot': { const n = +e.target.closest('[data-slot]').dataset.slot, list = P.dayTasks(today()).filter(t => !isDone(t)); if (!list.length) return toast('Add a block today first.'); return menu(e.target.closest('button'), list.slice(0, 10).map(t => ({ label:t.title, run:() => P.setPriority(t.id, n) }))); }
   }
@@ -265,7 +283,7 @@ function blockMenu(btn, t){
   menu(btn, [{ label:isDone(t) ? 'Mark not done' : 'Mark done', run:() => toggleDone(t) }, { label:'Edit', run:() => openEditor(t) }, { label:'Link ClickUp', run:() => openSession(t) },
     { label:'Move to next free slot', run:() => { const from = t.local_date >= today() ? t.local_date : today(), s = P.nextFree(t, from, from === t.local_date ? t.start_minute + SLOT : null);
       if (!s) return toast('No free slot in the next 30 days. Drag it instead.', 'error'); toast(`Moved to ${fmtDate(s.date)}, ${fmtClock(s.minute)}.`, 'success', { label:'Undo', run:P.moveTask(t.id, s.date, s.minute) }); reveal(t.id); } },
-    { label:'Send to Queue', run:() => toast('Sent to Queue.', 'success', { label:'Undo', run:P.toQueue(t.id) }) }, ...priorityItems(t),
+    { label:'Send to Unscheduled', run:() => toast('Sent to Unscheduled.', 'success', { label:'Undo', run:P.toQueue(t.id) }) }, ...priorityItems(t),
     { label:'Delete', danger:true, run:() => { SFX.back(); toast('Block deleted.', null, { label:'Undo', run:P.deleteTask(t.id) }); } }]);
 }
 
@@ -343,7 +361,7 @@ function beginDrag(ev, task, el, kind, grabY){
 
 function drop({ task, kind, target, pushed }){
   const undo = run => ({ label:'Undo', run }), note = pushed.length ? `, ${pushed.length} pushed` : '';
-  if (target.toQueue) return toast('Sent to Queue.', 'success', undo(P.toQueue(task.id)));
+  if (target.toQueue) return toast('Sent to Unscheduled.', 'success', undo(P.toQueue(task.id)));
   const minute = target.minute ?? task.start_minute ?? P.nextFree(task, target.date)?.minute ?? DAY_START;
   if (kind === 'queue') return toast(`Scheduled ${fmtClock(minute)}${note}.`, 'success', undo(P.fromQueue(task.id, target.date, minute, pushed)));
   if (target.date === task.local_date && minute === task.start_minute) return SFX.tick();
@@ -450,7 +468,80 @@ function openSession(task){
 function tick(){
   if (cal?.querySelector('.nowline')) placeNow();
   if (gridKey && !gridKey.endsWith('|' + today())) render();
-  maybeBreak();
+  maybeBreak(); maybeHeadsUp(); maybeWrapUp(); syncWrapChip();
+}
+const notify = (title, body) => { if (!document.hasFocus()) window.__TAURI__?.notification?.sendNotification({ title, body }); };
+
+// Five minutes before a block or a meeting. Once per item per launch: a restart inside that window may repeat one, which is harmless.
+const toldAbout = new Set();
+function maybeHeadsUp(){
+  if (store.pref('block_headsup', '1') === '0') return;
+  const d = today(), m = nowMinute();
+  const soon = [...P.dayTasks(d).filter(t => !isDone(t)), ...calendar.eventsOn(d)].filter(t => t.start_minute >= m && t.start_minute - m <= 5 && !toldAbout.has(t.id));
+  if (!soon.length) return;
+  soon.forEach(t => toldAbout.add(t.id));
+  const t = soon[0], left = t.start_minute - m, when = left === 0 ? 'now' : `in ${left} min`, text = `${t.title} starts ${when}.`;
+  notify('Up next', text);
+  toast(text, 'new', store.get('tasks', t.id) ? { label:'Start', run:() => { P.startSession(P.ensureSession(t)); toast(`Started ${t.title}.`, 'success'); } } : undefined);
+}
+
+/* ===== Fill my day: waiting work goes into free time, around meetings, after a preview ===== */
+function fillDay(){
+  const asked = S.mode === 'day' && S.date > today() ? S.date : today(), q = P.queue();
+  if (!q.length) return toast('Nothing is waiting in Unscheduled work.');
+  let date = asked, found = null; // a full or finished day moves on to the next one with room, so the search isn't the user's job
+  for (let i = 0; i < 7 && !found; i++){
+    date = addDays(asked, i);
+    const planned = P.dayTasks(date).reduce((n, t) => n + (+t.duration_minutes || 0), 0), r = P.fillPlan(P.busyOn, q, { date, planned });
+    if (r.placed.length) found = r;
+  }
+  if (!found) return toast('No room in the next week. Make some time, or move something.');
+  const { placed, left } = found, total = placed.reduce((n, p) => n + p.duration, 0), s = placed.length === 1 ? '' : 's';
+  sheet(date === today() ? 'Fill my day' : `Fill ${fmtDate(date)}`, (b, close) => {
+    fill(b, `<p class="muted">${date === asked ? '' : `Nothing fits ${asked === today() ? 'today' : fmtDate(asked)}. `}${placed.length} block${s}, ${fmtDuration(total)}, placed around what’s already planned.</p>
+      <div class="plist">${[...placed].sort((a, c) => a.minute - c.minute).map(p => `<div class="prow"><span class="ptime">${fmtClock(p.minute)}</span><span class="clip">${esc(p.title)}</span><span class="small muted">${fmtDuration(p.duration)}</span></div>`).join('')}</div>
+      ${left.length ? `<p class="small muted">${left.length} more won’t fit and stay in Unscheduled work.</p>` : ''}
+      <div class="sheet-actions">${backBtn('Cancel')}<button class="btn primary" type="button" data-go><span class="glyph">A</span>Schedule ${placed.length}</button></div>`);
+    $(b, '[data-close]').onclick = () => close();
+    $(b, '[data-go]').onclick = () => {
+      const undos = placed.map(p => P.fromQueue(p.id, p.date, p.minute)); close(true);
+      toast(`Scheduled ${placed.length} block${s}.`, 'success', { label:'Undo', run:() => [...undos].reverse().forEach(u => u()) }); reveal(placed[0].id);
+    };
+    $(b, '[data-go]').focus();
+  });
+}
+
+/* ===== Wrap up: how the day went, and one tap for what's left ===== */
+function maybeWrapUp(){
+  const d = today(), at = +store.pref('wrapup_minute', 1050), m = nowMinute();
+  if (store.pref('wrapup_enabled', '1') === '0' || store.pref('wrapup_seen', '') === d || m < at || m > at + 180 || document.querySelector('dialog[open]') || !P.dayTasks(d).length) return;
+  store.setPref('wrapup_seen', d);
+  notify('Wrap up your day', 'See how today went and carry the rest over.');
+  toast('Time to wrap up your day.', 'new', { label:'Review', run:wrapUp });
+}
+// The toast is a few seconds long; this stays in the toolbar from the set time until the day has been wrapped up.
+const wrapDue = () => store.pref('wrapup_enabled', '1') !== '0' && nowMinute() >= +store.pref('wrapup_minute', 1050) && store.pref('wrapup_done', '') !== today() && P.dayTasks(today()).length > 0;
+function syncWrapChip(){ const b = root && $(root, '[data-act="wrap"]'); if (b) b.hidden = !wrapDue(); }
+function wrapUp(){
+  const d = today(), tasks = P.dayTasks(d), open = tasks.filter(t => !isDone(t)), done = tasks.length - open.length;
+  if (!tasks.length) return toast('Nothing was planned today.');
+  store.setPref('wrapup_done', d); syncWrapChip();
+  const minutes = tasks.filter(isDone).reduce((n, t) => n + (+t.duration_minutes || 0), 0), plan = open.length ? P.carryPlan(P.busyOn, open, { date:addDays(d, 1) }) : [];
+  const tomorrow = new Map(plan.map(p => [p.id, p]));
+  if (done / tasks.length >= .8) react('happy', 900);
+  sheet('Wrap up your day', (b, close) => {
+    const head = `<p>${done} of ${tasks.length} block${tasks.length === 1 ? '' : 's'} done, ${fmtDuration(minutes) || '0m'} finished.</p>`;
+    if (!open.length){ fill(b, `${head}${stateBlock('happy', 'Everything is done', 'Nothing to carry over.')}<div class="sheet-actions">${backBtn('Close')}</div>`); $(b, '[data-close]').onclick = () => close(); return; }
+    const days = new Set(plan.map(p => p.date)), one = days.size === 1 ? [...days][0] : null; // one day: say it once, not on every row
+    fill(b, `${head}<h3>Still open${one ? `, moving to ${esc(fmtDate(one))}` : ''}</h3><div class="plist">${open.map(t => { const p = tomorrow.get(t.id);
+        return `<div class="prow"><span class="clip">${esc(t.title)}</span><span class="small muted">${p ? (one ? fmtClock(p.minute) : `${fmtDate(p.date)}, ${fmtClock(p.minute)}`) : 'No room soon'}</span></div>`; }).join('')}</div>
+      <div class="sheet-actions">${backBtn('Keep them today')}<button class="btn" type="button" data-queue data-sfx="back">Send to Unscheduled</button>${plan.length ? '<button class="btn primary" type="button" data-carry><span class="glyph">A</span>Carry to tomorrow</button>' : ''}</div>`);
+    const undoAll = undos => ({ label:'Undo', run:() => [...undos].reverse().forEach(u => u()) });
+    $(b, '[data-close]').onclick = () => close();
+    $(b, '[data-queue]').onclick = () => { const undos = open.map(t => P.toQueue(t.id)); close(true); toast(`Sent ${open.length} to Unscheduled work.`, 'success', undoAll(undos)); };
+    const go = $(b, '[data-carry]');
+    if (go){ go.onclick = () => { const undos = plan.map(p => P.moveTask(p.id, p.date, p.minute)); close(true); toast(`Carried ${plan.length} to tomorrow.`, 'success', undoAll(undos)); }; go.focus(); }
+  }, { wide:true });
 }
 function maybeBreak(){
   const d = today(), m = nowMinute(), at = +store.pref('break_reminder_minute', 780);
@@ -462,4 +553,4 @@ function maybeBreak(){
   toast(`Take a real break. ${text}`, 'new', { label:'Snooze 30 min', run:() => { store.setPref('break_reminder_seen', ''); store.setPref('break_reminder_snooze_until', new Date(Date.now() + 18e5).toISOString()); } });
 }
 
-export default { mount, render, onShow(){ tick(); render(); }, newBlock(){ if (!root) return; openEditor(null); } };
+export default { mount, render, onShow(){ tick(); render(); }, newBlock(){ if (!root) return; openEditor(null); }, fillDay, wrapUp };

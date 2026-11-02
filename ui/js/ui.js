@@ -66,7 +66,7 @@ export const confirmSheet = (title, text, label, danger = true, cancelLabel = 'K
 
 // Shown in Settings so no control is secret.
 export const SHORTCUTS = [['L or R', 'Previous or next tab'], ['Ctrl + Tab', 'Next tab, desktop app only'], ['1 2 3', 'Today, Brief, Command'], ['Arrows', 'Move the selection'], ['A or Enter', 'Open'], ['B or Esc', 'Back'],
-  ['X, Del or Space', 'Delete or more options for the selected item'], ['Y or Ctrl + ,', 'Settings'], ['Controller', 'A B X Y, D-pad or stick, shoulders for tabs, Start for New block']];
+  ['X, Del or Space', 'Delete or more options for the selected item'], ['Ctrl + Z', 'Undo, while its message is showing'], ['Y or Ctrl + ,', 'Settings'], ['Controller', 'A B X Y, D-pad or stick, shoulders for tabs, Start for New block']];
 
 let dropMenu = null;
 export const closeMenu = () => dropMenu?.();

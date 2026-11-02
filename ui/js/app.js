@@ -1,5 +1,5 @@
 // Shell and router. Views mount once and stay mounted; switching flips `hidden` synchronously, then renders only if dirty.
-import { initBrand, boot, toast, react, setRestPose, setMuted, setVolume, setDogSounds, loadSounds, bonk, SFX } from './brand.js';
+import { initBrand, boot, toast, react, setRestPose, setMuted, setVolume, setDogSounds, loadSounds, bonk, undoLast, SFX } from './brand.js';
 import * as store from './store.js';
 import * as sync from './sync.js';
 import { menu, closeMenu, loadingBlock, fieldErr, isTextEntry, slide, ITEMS } from './ui.js';
@@ -11,6 +11,7 @@ import command from './views/command.js';
 import quest from './views/quest.js';
 import { openFollowUps, exportWeek, openSettings, applyMotion } from './views/utilities.js';
 import { seedDemo } from './demo.js';
+import * as calendar from './calendar.js';
 
 const $ = id => document.getElementById(id);
 const VIEWS = { today, brief, command, quest };
@@ -52,6 +53,8 @@ export const invalidate = (...names) => { (names.length ? names : Object.keys(VI
 
 store.on(() => invalidate());
 window.addEventListener('recall:go', e => go(e.detail));
+window.addEventListener('recall:calendar', () => invalidate('today'));
+window.addEventListener('recall:fill', () => { go('today'); today.fillDay(); });
 
 let lastState = 'idle', syncFrom = 0, outage = false;
 function syncPill(s){
@@ -75,7 +78,7 @@ function wire(){
   $('sync').onclick = async () => { const ok = await sync.syncNow(); toast(ok ? 'Everything is synced.' : 'Couldn’t sync. Your changes are safe here, try again when you’re online.', ok ? 'success' : null); if (!ok) react('sad', 900); }; // the failure already whined
   $('newBlock').onclick = () => { go('today'); today.newBlock(); };
   $('moreBtn').onclick = e => menu(e.currentTarget, [
-    { label:'Quest', run:() => go('quest') }, { label:'Follow-ups', run:openFollowUps }, { label:'Export week', run:exportWeek }, ...(getComputedStyle($('settingsBtn')).display === 'none' ? [{ label:'Settings', run:openSettings }] : []), // the action bar is gone at phone width
+    { label:'Quest', run:() => go('quest') }, { label:'Wrap up day', run:() => { go('today'); today.wrapUp(); } }, { label:'Follow-ups', run:openFollowUps }, { label:'Export week', run:exportWeek }, ...(getComputedStyle($('settingsBtn')).display === 'none' ? [{ label:'Settings', run:openSettings }] : []), // the action bar is gone at phone width
   ]);
   $('settingsBtn').onclick = openSettings;
   // The bar names what X does to the selected item, and pressing it leaves the selection where it is.
@@ -100,6 +103,7 @@ function wire(){
     if (next){ next.focus(); SFX.tick(); } else { SFX.error(); bonk(items[at]); } }; // the ends stop
   let typed = '', backT = 0;
   addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !isTextEntry(e.target)){ if (undoLast()){ e.preventDefault(); SFX.back(); } return; }
     const sheetOpen = !!document.querySelector('dialog[open]');
     if (e.ctrlKey && current && !sheetOpen && (e.key === 'Tab' || e.key === ',')){ e.preventDefault(); keyed(); if (e.key === ','){ SFX.click(); openSettings(); } else shift(e.shiftKey ? -1 : 1); return; } // browsers keep Ctrl+Tab for themselves
     if (e.target.type === 'range' && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')){ // the slider keeps left and right; a controller's key is synthetic, so step it here
@@ -174,7 +178,7 @@ async function checkUpdate(){
   await store.open(demo);
   if (demo) seedDemo();
   const mute = () => { const m = store.pref('sound_muted', '0') === '1', v = store.pref('sound_volume', '6'); setMuted(m); setVolume(+v); setDogSounds(store.pref('dog_sounds', '1') !== '0'); localStorage.setItem('recall.muted', m ? '1' : '0'); localStorage.setItem('recall.volume', v); };
-  mute(); store.on(mute); applyMotion();
+  mute(); store.on(mute); applyMotion(); calendar.init(demo);
   sync.onStatus(syncPill);
   store.on(() => syncPill(sync.getStatus()));
   const known = !!store.ctx.workspaceId;

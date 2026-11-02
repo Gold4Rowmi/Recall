@@ -12,7 +12,7 @@ const METRICS = [['risk', 'At risk'], ['attention', 'Decisions'], ['scope', 'Mis
 const KINDS = { risk:['Risk', 'bad'], attention:['Decision', 'warn'], scope:['Setup', 'info'] };
 const $ = (root, sel) => root.querySelector(sel);
 
-export const openRow = url => `<button class="btn" type="button" data-url="${esc(url)}">Open</button>`;
+export const openRow = url => `<button class="btn" type="button" data-url="${esc(url)}" title="Opens in ClickUp" aria-label="Open in ClickUp">Open</button>`;
 export const workRow = ({ tone, title, meta, detail, action = '' }) => `<div class="wrow ${tone}"><i class="tone" aria-hidden="true"></i><div class="wmain"><div class="clip wtitle" title="${esc(title)}">${esc(title)}</div><div class="small muted clip">${esc(meta)}</div>${detail ? `<div class="small">${esc(detail)}</div>` : ''}</div><div class="wact">${action}</div></div>`;
 export const metricStrip = (list, values) => `<div class="metrics">${list.map(([k, label]) => `<div class="metric"><span class="pixel mval" role="img" aria-label="${esc(values[k])}" data-roll="${esc(values[k])}">${rollDigits(values[k])}</span><span class="small muted">${esc(label)}</span></div>`).join('')}</div>`;
 export const dueText = due => due ? fmtDate(due, { day:'2-digit', month:'short' }) : '';
@@ -41,7 +41,7 @@ export default {
         <section class="card flush"><h2>What needs attention</h2><div data-list></div></section>
         <div class="stack">
           <section class="card"><h2>My day</h2><p class="small muted" data-health></p><div class="top3" data-top3></div>
-            <button class="btn primary" type="button" data-plan><span class="glyph">A</span>Plan my day</button></section>
+            <button class="btn primary" type="button" data-plan><span class="glyph">A</span>Fill my day</button></section>
           <section class="card"><h2>Yesterday</h2><p class="small muted" data-recap></p>
             <button class="btn" type="button" data-toggle aria-expanded="false">Add context</button>
             <div data-context hidden><label class="field">Context for today<textarea data-note></textarea></label><div class="sheet-actions"><button class="btn" type="button" data-save>Save context</button></div></div></section>
@@ -50,7 +50,8 @@ export default {
     el.addEventListener('click', e => {
       const b = e.target.closest('button'); if (!b) return;
       sharedClick(b);
-      if ('plan' in b.dataset) window.dispatchEvent(new CustomEvent('recall:go', { detail:'today' }));
+      if ('plan' in b.dataset) window.dispatchEvent(new CustomEvent('recall:fill'));
+      else if ('cmd' in b.dataset) window.dispatchEvent(new CustomEvent('recall:go', { detail:'command' }));
       else if ('toggle' in b.dataset) this.toggleContext(b);
       else if ('save' in b.dataset) this.saveContext();
     });
@@ -71,7 +72,7 @@ export default {
   paintDay(plan, y){
     const el = this.el;
     $(el, '[data-health]').textContent = plan.health;
-    fill($(el, '[data-top3]'), plan.top3.map((t, i) => `<div class="row toprow"><span class="ptag">P${i + 1}</span><span class="clip" title="${esc(t.title)}">${esc(t.title)}</span><span class="spacer"></span><span class="small muted">${t.kind === 'calendar' ? 'Calendar' : 'Queue'}</span></div>`).join('') || '<p class="small muted">No Top 3 suggestion yet.</p>');
+    fill($(el, '[data-top3]'), plan.top3.map((t, i) => `<div class="row toprow"><span class="ptag">P${i + 1}</span><span class="clip" title="${esc(t.title)}">${esc(t.title)}</span><span class="spacer"></span><span class="small muted">${t.kind === 'calendar' ? 'Calendar' : 'Unscheduled'}</span></div>`).join('') || '<p class="small muted">No Top 3 suggestion yet.</p>');
     $(el, '[data-recap]').textContent = y.total ? `${y.done}/${y.total} blocks · ${y.pct}% completion · ${fmtDuration(y.completed)} done` + (y.carry.length ? `\nCarry-over: ${y.carry.slice(0, 3).join(', ')}${y.carry.length > 3 ? '…' : ''}` : '') : 'No blocks were scheduled yesterday.';
   },
   render(){
@@ -93,7 +94,7 @@ export default {
       const [kind, tone] = KINDS[k], due = dueText(item.due);
       return workRow({ tone, title:item.title, meta:kind + (due ? ' · ' + due : ''), detail:item.why || item.action, action:item.row?.url ? openRow(item.row.url) : '' });
     }));
-    fill(list, rows.join('') || (snap.has_clickup ? stateBlock('sleepy', 'Nothing needs you', 'Start with your own plan.', '<button class="btn primary" type="button" data-plan><span class="glyph">A</span>Plan my day</button>') : noClickUp('No ClickUp work yet')));
+    fill(list, rows.join('') || (snap.has_clickup ? stateBlock('sleepy', 'Nothing needs you', 'Start with your own plan.', '<button class="btn primary" type="button" data-plan><span class="glyph">A</span>Fill my day</button>') : noClickUp('No ClickUp work yet')) + (rows.length && (ops.risk.length > 3 || ops.attention.length > 3 || ops.scope.length > 2) ? '<div class="pad"><button class="btn" type="button" data-cmd>See all in Command</button></div>' : '')); // the tiles count everything; the list shows the top few
     this.paintDay(snap.plan, snap.yesterday);
   },
 };
