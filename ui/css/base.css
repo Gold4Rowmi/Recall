@@ -126,6 +126,7 @@ textarea{resize:vertical; min-height:88px; padding:8px 12px}
 :is(input,select,textarea):focus-visible{outline:2px solid var(--blue); outline-offset:0; border-color:var(--blue)}
 label.field{display:flex; flex-direction:column; gap:6px; min-width:0; font-size:13px; font-weight:600}
 label.field :is(input,select,textarea){font-size:14px; font-weight:400}
+@media (pointer:coarse){ input,select,textarea,label.field :is(input,select,textarea){font-size:16px} } /* under 16 px iOS zooms the page on focus and leaves it zoomed */
 .help{flex-basis:100%; font-size:12px; font-weight:400; color:var(--muted)}
 .field.err :is(input,select,textarea){border-color:var(--danger)}
 .field.err .help{color:var(--danger)}

@@ -198,6 +198,16 @@ body.dragging{cursor:grabbing; user-select:none}
   .dlist .qrow{flex-wrap:wrap} .dlist .qacts{flex:1 0 100%; justify-content:flex-end}
 }
 @media (max-width:600px){
+  /* One toolbar shape whatever the title says: nav, title, view switch, then the two list buttons */
+  .tbar .spacer{display:none}
+  .tbar h1{order:1; flex:1 0 100%; margin:0}
+  .tbar .seg{order:2; flex:1 1 100%} .tbar .seg button{flex:1}
+  .tbar [data-act="wrap"],.tbar [data-act="plan"]{order:3; flex:1 1 0; justify-content:center; padding:0 12px}
+  .dhead .seg{flex:1; min-width:0} .dhead .seg button{flex:1; min-width:0; padding:0 4px; font-size:12px}
+  .dhead .spacer{display:none}
+  /* Seven narrow columns can't hold a title: the week keeps readable columns and scrolls sideways, hours pinned */
+  .cal.week .calhead,.cal.week .calbody{min-width:calc(var(--gut) + var(--cols) * 104px)}
+  .cal.week .gutter,.cal.week .calhead>span{position:sticky; left:0; z-index:4; background:var(--raised)}
   .cal{--gut:40px} .gutter i{right:4px}
   .blk .tick{position:relative} .blk .tick::after{content:""; position:absolute; inset:-13px} /* the block clips this, so it's 44 px wherever the block has room */
   /* A month cell is about 49 px wide: too narrow for titles, so it gives the day and a count */

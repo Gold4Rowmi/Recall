@@ -137,6 +137,7 @@ function renderGrid(){
       <div class="calbody" style="--cols:${dates.length};--slot:${SLOT_PX}px;height:${yOf(hi)}px"><div class="gutter">${hours.join('')}</div>${dates.map(d => `<div class="col${d === now ? ' isnow' : ''}" data-date="${d}">${d === now ? '<div class="nowline"></div>' : ''}</div>`).join('')}</div>`;
     placeNow();
     cal.scrollTop = Math.max(0, yOf(dates.includes(now) ? openAt(now) : 8 * 60));
+    const nowCol = cal.querySelector('.col.isnow'); cal.scrollLeft = phone.matches && dates.length > 1 && nowCol ? Math.max(0, nowCol.offsetLeft - 40) : 0; // a phone's week scrolls sideways, starting at today
   }
   const seen = new Set();
   for (const d of dates){
@@ -230,7 +231,7 @@ function setDrawer(tab){
     if (tab === 'queue'){ $(drawer, '.dbody').innerHTML = `<form class="capture" id="qadd"><input aria-label="New unscheduled item" placeholder="Capture something" required><button class="btn" type="submit">Add</button></form><div class="dlist"></div>`;
       $(drawer, '#qadd').onsubmit = e => { e.preventDefault(); const i = e.target.querySelector('input'); P.createBlock({ title:i.value.trim(), duration:30 }); i.value = ''; toast('Added to Unscheduled.'); }; }
     if (tab === 'followups') mountFollowUps($(drawer, '.dbody'));
-    renderDrawer(); (tab === 'queue' ? $(drawer, '#qadd input') : $(drawer, `[data-tab="${tab}"]`)).focus(); } // the capture field is why anyone opens Unscheduled
+    renderDrawer(); (tab === 'queue' && !phone.matches ? $(drawer, '#qadd input') : $(drawer, `[data-tab="${tab}"]`)).focus(); } // the capture field is why anyone opens Unscheduled; on a phone it would raise the keyboard and zoom the page
   else { drawerFrom?.focus(); drawerFrom = null; }
 }
 function renderDrawer(){
