@@ -48,9 +48,11 @@ export function fill(el, markup){ el.innerHTML = markup; if (markup.includes('da
 export function sheet(title, build, { wide = false, work = false } = {}){
   return new Promise(resolve => {
     const d = document.createElement('dialog'); d.className = wide ? 'wide' : work ? 'work' : '';
-    d.innerHTML = `<h2>${esc(title)}</h2><div class="sheet-body"></div>`;
+    d.innerHTML = `<div class="shead"><h2>${esc(title)}</h2><button class="btn ghost icon" type="button" data-sfx="none" aria-label="Close" title="Close">${icon('close')}</button></div><div class="sheet-body"></div>`;
     document.body.appendChild(d);
     let result; const close = v => { result = v; d.close(); };
+    d.querySelector('.shead button').onclick = () => d.close(); // the way out sits at the top as well as the bottom; Esc and a click outside also close
+    d.addEventListener('click', e => { const r = d.getBoundingClientRect(); if (e.target === d && (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom)) d.close(); });
     d.addEventListener('close', () => { d.remove(); if (result === undefined) SFX.back(); resolve(result); }); // a sheet that returned a value was confirmed, not backed out of
     build(d.querySelector('.sheet-body'), close);
     d.showModal();

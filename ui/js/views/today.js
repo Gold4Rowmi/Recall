@@ -270,7 +270,7 @@ function onClick(e){
     case 'done': return toggleDone(task);
     case 'more': return blockMenu(e.target.closest('button'), task);
     case 'qplan': { const s = P.nextFree(task, today()); if (!s) return toast('No free slot in the next 30 days. Drag it onto the calendar instead.', 'error'); const undo = P.fromQueue(task.id, s.date, s.minute); reveal(task.id); return toast(`Scheduled ${fmtDate(s.date)}, ${fmtClock(s.minute)}.`, 'success', { label:'Undo', run:undo }); }
-    case 'qdel': return toast('Removed from Unscheduled.', null, { label:'Undo', run:P.deleteTask(task.id) });
+    case 'qdel': return toast(`Removed “${task.title}” from Unscheduled.`, null, { label:'Undo', run:P.deleteTask(task.id) });
     case 'qmore': return menu(e.target.closest('button'), [{ label:'Edit', run:() => openEditor(task) }, ...priorityItems(task)]);
     case 'slot': { const n = +e.target.closest('[data-slot]').dataset.slot, list = P.dayTasks(today()).filter(t => !isDone(t)); if (!list.length) return toast('Add a block today first.'); return menu(e.target.closest('button'), list.slice(0, 10).map(t => ({ label:t.title, run:() => P.setPriority(t.id, n) }))); }
   }
@@ -285,7 +285,7 @@ function blockMenu(btn, t){
     { label:'Move to next free slot', run:() => { const from = t.local_date >= today() ? t.local_date : today(), s = P.nextFree(t, from, from === t.local_date ? t.start_minute + SLOT : null);
       if (!s) return toast('No free slot in the next 30 days. Drag it instead.', 'error'); toast(`Moved to ${fmtDate(s.date)}, ${fmtClock(s.minute)}.`, 'success', { label:'Undo', run:P.moveTask(t.id, s.date, s.minute) }); reveal(t.id); } },
     { label:'Send to Unscheduled', run:() => toast('Sent to Unscheduled.', 'success', { label:'Undo', run:P.toQueue(t.id) }) }, ...priorityItems(t),
-    { label:'Delete', danger:true, run:() => { SFX.back(); toast('Block deleted.', null, { label:'Undo', run:P.deleteTask(t.id) }); } }]);
+    { label:'Delete', danger:true, run:() => { SFX.back(); toast(`Deleted “${t.title}”.`, null, { label:'Undo', run:P.deleteTask(t.id) }); } }]);
 }
 
 /* ===== Drag: pointer events, transforms only, one store write on drop ===== */
@@ -416,7 +416,7 @@ function openEditor(task, at = {}){
         if (f.until.value < v.date) return fail(f.until, 'The end date needs to be after the start.');
         const n = P.createSeries({ ...v, frequency:f.repeat.value, weekdays:wd, until:f.until.value }); close(true); toast(`Added ${n} block${n === 1 ? '' : 's'}.`, 'success'); return; }
       const made = P.createBlock(v); close(true); toast('Saved.', 'success'); reveal(made.id); };
-    if (task){ $(b, '[data-del]').onclick = () => { close(); toast('Block deleted.', null, { label:'Undo', run:P.deleteTask(task.id) }); };
+    if (task){ $(b, '[data-del]').onclick = () => { close(); toast(`Deleted “${task.title}”.`, null, { label:'Undo', run:P.deleteTask(task.id) }); };
       const doneBtn = $(b, '[data-done]'); if (doneBtn) doneBtn.onclick = () => { close(true); toggleDone(task); };
       $(b, '[data-link]').onclick = () => { close(true); openSession(task); }; }
     if (task?.recurrence_rule_id){

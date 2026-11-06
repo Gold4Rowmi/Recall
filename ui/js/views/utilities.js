@@ -70,10 +70,10 @@ export function openSettings(){
     const brk = store.pref('break_reminders_enabled', '1') !== '0', minute = +store.pref('break_reminder_minute', 780), hhmm = `${String(Math.floor(minute / 60)).padStart(2, '0')}:${String(minute % 60).padStart(2, '0')}`;
     const wrap = +store.pref('wrapup_minute', 1050), wrapAt = `${String(Math.floor(wrap / 60)).padStart(2, '0')}:${String(wrap % 60).padStart(2, '0')}`;
     b.innerHTML = `<div class="settings">
-      <label class="field">Theme<select data-theme-pick><option value="system">${window.__TAURI__ ? 'Match Windows' : 'Match this device'}</option><option value="light">Light</option><option value="dark">Dark</option></select></label>
       ${toggle('Sound', !muted, 'data-sound')}
       <div class="detent-ctl"><label class="field">Volume<input type="range" min="0" max="10" step="1" value="${volume}" data-volume></label><div class="ticks" aria-hidden="true">${Array.from({ length:11 }, (_, i) => `<i class="${i <= volume ? 'on' : ''}"></i>`).join('')}</div></div>
       ${toggle('Dog sounds', store.pref('dog_sounds', '1') !== '0', 'data-dogs')}
+      <label class="field">Theme<select data-theme-pick><option value="system">${window.__TAURI__ ? 'Match Windows' : 'Match this device'}</option><option value="light">Light</option><option value="dark">Dark</option></select></label>
       ${toggle('Motion', motion, 'data-motion')}
       <h3 class="pixel sect">Reminders</h3>
       ${toggle('Daily break reminder', brk, 'data-break')}

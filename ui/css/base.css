@@ -175,6 +175,7 @@ dialog.wide{max-width:min(960px,calc(100% - 32px))}
 #about .sheet-actions{position:static; margin:16px 0 0; padding:0; border:0}
 dialog::backdrop{background:var(--scrim)}
 dialog h2{font-size:16px; font-weight:600; margin-bottom:12px}
+.shead{display:flex; align-items:flex-start; justify-content:space-between; gap:8px; margin:-8px -8px 4px 0} .shead h2{margin:8px 0 0}
 dialog p{color:var(--muted)}
 dialog h2:focus{outline:none}
 .sheet-actions{display:flex; gap:8px; justify-content:flex-end; margin-top:16px; flex-wrap:wrap}
