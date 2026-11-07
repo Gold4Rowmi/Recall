@@ -52,7 +52,10 @@ export function sheet(title, build, { wide = false, work = false } = {}){
     document.body.appendChild(d);
     let result; const close = v => { result = v; d.close(); };
     d.querySelector('.shead button').onclick = () => d.close(); // the way out sits at the top as well as the bottom; Esc and a click outside also close
-    d.addEventListener('click', e => { const r = d.getBoundingClientRect(); if (e.target === d && (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom)) d.close(); });
+    const outside = e => { const r = d.getBoundingClientRect(); return e.target === d && (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom); };
+    let armed = false; // the press must start outside too, so the tap that opened the sheet can never close it
+    d.addEventListener('pointerdown', e => { armed = outside(e); });
+    d.addEventListener('click', e => { if (armed && outside(e)) d.close(); armed = false; });
     d.addEventListener('close', () => { d.remove(); if (result === undefined) SFX.back(); resolve(result); }); // a sheet that returned a value was confirmed, not backed out of
     build(d.querySelector('.sheet-body'), close);
     d.showModal();
